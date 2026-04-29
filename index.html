@@ -43,6 +43,7 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -53,6 +54,7 @@
             width: 100%;
             max-width: 480px;
             height: 100vh;
+            height: 100dvh;
             background: var(--bg-primary);
             position: relative;
             overflow: hidden;
@@ -234,11 +236,13 @@
             display: none;
             flex-direction: column;
             height: 100%;
+            overflow: hidden;
             animation: fadeIn 0.3s ease;
         }
 
         .main-screen.active {
             display: flex;
+            flex: 1;
         }
 
         .chat-header {
@@ -544,11 +548,25 @@
             display: none;
             flex-direction: column;
             height: 100%;
+            overflow: hidden;
             animation: slideIn 0.3s ease;
         }
 
         .chat-room.active {
             display: flex;
+            flex: 1;
+        }
+
+        .messages-container {
+            flex: 1 1 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            background: var(--bg-primary);
+            min-height: 0;
         }
 
         .room-header {
@@ -635,15 +653,7 @@
             text-overflow: ellipsis;
         }
 
-        .messages-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            background: var(--bg-primary);
-        }
+
 
         .messages-container::-webkit-scrollbar {
             width: 4px;
@@ -1827,21 +1837,17 @@
     
     initStickerGrid();
     
-    // ✅ Tunggu Firebase Auth state, baru cek localStorage
     auth.onAuthStateChanged(async (firebaseUser) => {
-        const savedUser = localStorage.getItem('mahichat_user');
-        
-        if (firebaseUser && savedUser) {
-            // Auth aktif + ada sesi tersimpan → langsung masuk
-            currentUser = JSON.parse(savedUser);
+        const savedRaw = localStorage.getItem('mahichat_user');
+        if (!savedRaw) { showLogin(); return; }
+        const savedUser = JSON.parse(savedRaw);
+        if (firebaseUser) {
+            currentUser = savedUser;
             showMainScreen();
-        } else if (savedUser) {
-            // Ada sesi localStorage tapi Auth expired → paksa login ulang
+        } else {
             localStorage.removeItem('mahichat_user');
             showLogin();
             showToast('Sesi kamu habis, silakan login ulang', 'error');
-        } else {
-            showLogin();
         }
     });
 }
@@ -1947,10 +1953,31 @@
             try {
                 // Check if admin login
                 if (username === ADMIN_USER && password === ADMIN_PASS) {
+                    const adminEmail = ADMIN_USER + '@mahichat.app';
+                    try {
+                        await auth.signInWithEmailAndPassword(adminEmail, password);
+                    } catch (authErr) {
+                        if (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials') {
+                            await auth.createUserWithEmailAndPassword(adminEmail, password);
+                        } else {
+                            throw authErr;
+                        }
+                    }
+                    const adminRef = db.collection('users').doc(ADMIN_USER);
+                    const adminDoc = await adminRef.get();
+                    if (!adminDoc.exists) {
+                        await adminRef.set({
+                            username: ADMIN_USER,
+                            bio: 'Owner MahiChat 👑',
+                            avatar: null,
+                            isOwner: true,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
                     currentUser = {
-                        username: 'langitdev',
-                        bio: 'Owner MahiChat 👑',
-                        avatar: null,
+                        username: ADMIN_USER,
+                        bio: adminDoc.exists ? (adminDoc.data().bio || 'Owner MahiChat 👑') : 'Owner MahiChat 👑',
+                        avatar: adminDoc.exists ? (adminDoc.data().avatar || null) : null,
                         isOwner: true
                     };
                     localStorage.setItem('mahichat_user', JSON.stringify(currentUser));
@@ -2003,11 +2030,7 @@
 
             if (!db) return;
 
-            // Unsubscribe listener lama kalau ada
-            if (chatsUnsubscribe) {
-                chatsUnsubscribe();
-                chatsUnsubscribe = null;
-            }
+            if (chatsUnsubscribe) { chatsUnsubscribe(); chatsUnsubscribe = null; }
 
             chatsUnsubscribe = db.collection('chats')
                 .where('participants', 'array-contains', currentUser.username)
@@ -2015,17 +2038,12 @@
                 .orderBy('lastMessageTime', 'desc')
                 .onSnapshot(snapshot => {
                     chatList.innerHTML = '';
-
                     if (snapshot.empty) {
                         emptyChats.style.display = 'flex';
                         return;
                     }
-
                     emptyChats.style.display = 'none';
-
-                    snapshot.forEach(doc => {
-                        renderChatItem(doc.data(), doc.id);
-                    });
+                    snapshot.forEach(doc => renderChatItem(doc.data(), doc.id));
                 }, err => {
                     console.error('loadChats error:', err);
                 });
@@ -2040,18 +2058,14 @@
             item.className = 'chat-item';
             item.onclick = () => isGroup ? openGroupChat(chatId, chat) : openChat(chatId, otherUser);
             
-            let avatarHtml, name, status, badgeHtml;
+            let avatarHtml, name;
             
             if (isGroup) {
                 avatarHtml = '<i class="fas fa-users" style="font-size:20px"></i>';
                 name = chat.name || 'Grup Tanpa Nama';
-                status = chat.participants.length + ' anggota';
-                badgeHtml = '<i class="fas fa-users group-check"></i>';
             } else {
                 avatarHtml = '👤';
                 name = otherUser || 'Unknown';
-                status = 'online';
-                badgeHtml = chat.isOwner ? '<i class="fas fa-check-circle owner-check"></i>' : '';
             }
             
             const lastMsg = chat.lastMessage || 'Belum ada pesan';
@@ -2066,7 +2080,7 @@
                 <div class="chat-info">
                     <div class="chat-name-row">
                         <div class="chat-name">${name}</div>
-                        ${badgeHtml}
+                        ${isGroup ? '<i class="fas fa-users group-check"></i>' : '<span class="badge-placeholder"></span>'}
                     </div>
                     <div class="chat-preview">${lastMsg}</div>
                 </div>
@@ -2077,6 +2091,23 @@
             `;
             
             chatList.appendChild(item);
+
+            // Fetch owner badge dari users collection (async, non-blocking)
+            if (!isGroup && otherUser) {
+                db.collection('users').doc(otherUser).get().then(userDoc => {
+                    if (userDoc.exists && userDoc.data().isOwner) {
+                        const placeholder = item.querySelector('.badge-placeholder');
+                        if (placeholder) {
+                            placeholder.outerHTML = '<i class="fas fa-check-circle owner-check"></i>';
+                        }
+                        // Update avatar kalau ada
+                        if (userDoc.data().avatar) {
+                            const avatarDiv = item.querySelector('.chat-avatar');
+                            if (avatarDiv) avatarDiv.innerHTML = `<img src="${userDoc.data().avatar}" onerror="this.parentNode.innerHTML='👤'">`;
+                        }
+                    }
+                }).catch(() => {});
+            }
         }
 
         function filterChats() {
@@ -2093,20 +2124,31 @@
             currentChatId = chatId;
             currentChatUser = username;
             currentChatType = 'private';
-            
-            const userDoc = await db.collection('users').doc(username).get();
-            const userData = userDoc.exists ? userDoc.data() : {};
-            
-            document.getElementById('roomName').innerHTML = `
-                ${username}
-                ${userData.isOwner ? '<i class="fas fa-check-circle owner-check"></i>' : ''}
-            `;
-            document.getElementById('roomStatus').textContent = userData.bio || 'online';
-            document.getElementById('roomGroupBadge').classList.add('hidden');
-            
+
+            // Tampilkan chatRoom DULU supaya ga blank
             document.getElementById('mainScreen').classList.remove('active');
+            document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('chatRoom').classList.add('active');
-            
+            document.getElementById('roomName').innerHTML = username;
+            document.getElementById('roomStatus').textContent = 'online';
+            document.getElementById('roomGroupBadge').classList.add('hidden');
+            document.getElementById('roomOwnerBadge').classList.add('hidden');
+
+            // Fetch user data (non-blocking)
+            try {
+                const userDoc = await db.collection('users').doc(username).get();
+                if (userDoc.exists) {
+                    const userData = userDoc.data();
+                    document.getElementById('roomName').innerHTML = `
+                        ${username}
+                        ${userData.isOwner ? '<i class="fas fa-check-circle owner-check"></i>' : ''}
+                    `;
+                    document.getElementById('roomStatus').textContent = userData.bio || 'online';
+                }
+            } catch (err) {
+                console.error('openChat fetch error:', err);
+            }
+
             loadMessages();
         }
 
@@ -2127,12 +2169,10 @@
             loadMessages();
         }
 
+        let messagesUnsubscribe = null;
+
         function backToMain() {
-            // Unsubscribe messages listener
-            if (messagesUnsubscribe) {
-                messagesUnsubscribe();
-                messagesUnsubscribe = null;
-            }
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
             currentChatId = null;
             currentChatUser = null;
@@ -2147,8 +2187,6 @@
             document.getElementById('stickerPanel').classList.remove('show');
         }
 
-        let messagesUnsubscribe = null;
-
         function loadMessages() {
             const container = document.getElementById('messagesContainer');
             container.innerHTML = '';
@@ -2156,11 +2194,7 @@
 
             if (!db || !currentChatId) return;
 
-            // Unsubscribe listener lama
-            if (messagesUnsubscribe) {
-                messagesUnsubscribe();
-                messagesUnsubscribe = null;
-            }
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
             messagesUnsubscribe = db.collection('chats').doc(currentChatId)
                 .collection('messages')
@@ -2169,9 +2203,11 @@
                     snapshot.docChanges().forEach(change => {
                         if (change.type === 'added') {
                             const msg = change.doc.data();
-                            const msgDate = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
+                            // Skip kalau timestamp masih null (pending server resolve)
+                            if (!msg.timestamp) return;
 
-                            if (msgDate && msgDate !== lastDate) {
+                            const msgDate = msg.timestamp.toDate().toDateString();
+                            if (msgDate !== lastDate) {
                                 const sep = document.createElement('div');
                                 sep.className = 'date-separator';
                                 sep.innerHTML = `<span>${formatDate(msg.timestamp.toDate())}</span>`;
@@ -2181,6 +2217,24 @@
 
                             appendMessage(msg);
                         }
+                        // Kalau timestamp baru resolve (modified dari null ke value)
+                        if (change.type === 'modified') {
+                            const msg = change.doc.data();
+                            if (!msg.timestamp) return;
+                            // Cek apakah pesan ini sudah dirender (cari by content)
+                            const existing = container.querySelector(`[data-msgid="${change.doc.id}"]`);
+                            if (!existing) {
+                                const msgDate = msg.timestamp.toDate().toDateString();
+                                if (msgDate !== lastDate) {
+                                    const sep = document.createElement('div');
+                                    sep.className = 'date-separator';
+                                    sep.innerHTML = `<span>${formatDate(msg.timestamp.toDate())}</span>`;
+                                    container.appendChild(sep);
+                                    lastDate = msgDate;
+                                }
+                                appendMessage(msg, change.doc.id);
+                            }
+                        }
                     });
                     scrollToBottom();
                 }, err => {
@@ -2188,12 +2242,13 @@
                 });
         }
 
-        function appendMessage(msg) {
+        function appendMessage(msg, docId) {
             const container = document.getElementById('messagesContainer');
             const isOwn = msg.sender === currentUser.username;
             
             const wrapper = document.createElement('div');
             wrapper.className = `message-wrapper ${isOwn ? 'own' : ''}`;
+            if (docId) wrapper.setAttribute('data-msgid', docId);
             
             let content = '';
             if (msg.type === 'text') {
@@ -2253,13 +2308,21 @@
                 read: false
             };
             
-            await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
-            
-            await db.collection('chats').doc(currentChatId).update({
-                lastMessage: text,
-                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
-                [`unread.${currentChatUser}`]: firebase.firestore.FieldValue.increment(1)
-            });
+            try {
+                await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+                const updateData = {
+                    lastMessage: text,
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (currentChatUser) {
+                    updateData[`unread.${currentChatUser}`] = firebase.firestore.FieldValue.increment(1);
+                }
+                await db.collection('chats').doc(currentChatId).update(updateData);
+            } catch (err) {
+                showToast('Gagal kirim: ' + err.message, 'error');
+                input.value = text;
+                console.error('sendMessage error:', err);
+            }
         }
 
         function handleEnter(e) {
