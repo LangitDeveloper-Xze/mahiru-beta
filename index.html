@@ -2203,42 +2203,30 @@
                     snapshot.docChanges().forEach(change => {
                         if (change.type === 'added') {
                             const msg = change.doc.data();
-                            // Skip kalau timestamp masih null (pending server resolve)
-                            if (!msg.timestamp) return;
+                            const docId = change.doc.id;
 
-                            const msgDate = msg.timestamp.toDate().toDateString();
-                            if (msgDate !== lastDate) {
-                                const sep = document.createElement('div');
-                                sep.className = 'date-separator';
-                                sep.innerHTML = `<span>${formatDate(msg.timestamp.toDate())}</span>`;
-                                container.appendChild(sep);
-                                lastDate = msgDate;
-                            }
+                            // Jangan render kalau sudah ada (hindari duplikat)
+                            if (container.querySelector(`[data-msgid="${docId}"]`)) return;
 
-                            appendMessage(msg);
-                        }
-                        // Kalau timestamp baru resolve (modified dari null ke value)
-                        if (change.type === 'modified') {
-                            const msg = change.doc.data();
-                            if (!msg.timestamp) return;
-                            // Cek apakah pesan ini sudah dirender (cari by content)
-                            const existing = container.querySelector(`[data-msgid="${change.doc.id}"]`);
-                            if (!existing) {
-                                const msgDate = msg.timestamp.toDate().toDateString();
-                                if (msgDate !== lastDate) {
+                            try {
+                                const msgDate = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
+                                if (msgDate && msgDate !== lastDate) {
                                     const sep = document.createElement('div');
                                     sep.className = 'date-separator';
                                     sep.innerHTML = `<span>${formatDate(msg.timestamp.toDate())}</span>`;
                                     container.appendChild(sep);
                                     lastDate = msgDate;
                                 }
-                                appendMessage(msg, change.doc.id);
+                                appendMessage(msg, docId);
+                            } catch(e) {
+                                console.error('appendMessage error:', e, msg);
                             }
                         }
                     });
                     scrollToBottom();
                 }, err => {
                     console.error('loadMessages error:', err);
+                    showToast('Gagal memuat pesan: ' + err.message, 'error');
                 });
         }
 
