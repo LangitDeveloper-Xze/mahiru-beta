@@ -1463,7 +1463,6 @@
         <p>Developer Tools terdeteksi. Mohon tutup DevTools untuk melanjutkan.</p>
     </div>
 
-    <div id="debugPanel"></div>
     <div class="app-container">
         <!-- LOADING -->
         <div class="loading-overlay" id="loadingOverlay">
@@ -1823,19 +1822,6 @@
         const ADMIN_USER = 'langitdev';
         const ADMIN_PASS = 'langitdev2026@123';
 
-        // ==================== DEBUG ====================
-        const debugLogs = [];
-        function dbg(msg) {
-            const panel = document.getElementById('debugPanel');
-            if (!panel) return;
-            const time = new Date().toLocaleTimeString();
-            debugLogs.push('[' + time + '] ' + msg);
-            if (debugLogs.length > 20) debugLogs.shift();
-            panel.textContent = debugLogs.join('\n');
-            panel.style.display = 'block';
-            console.log('[DBG]', msg);
-        }
-
         // ==================== INIT ====================
         function init() {
     generateCaptcha();
@@ -2052,9 +2038,18 @@
                     chatList.innerHTML = '';
                     if (snapshot.empty) { emptyChats.style.display = 'flex'; return; }
                     emptyChats.style.display = 'none';
-                    snapshot.forEach(doc => renderChatItem(doc.data(), doc.id));
+                    // Sort: pinned dulu
+                    const docs = [];
+                    snapshot.forEach(doc => docs.push(doc));
+                    docs.sort((a, b) => {
+                        const ap = a.data().pinned ? 1 : 0;
+                        const bp = b.data().pinned ? 1 : 0;
+                        return bp - ap;
+                    });
+                    docs.forEach(doc => renderChatItem(doc.data(), doc.id));
                 }, err => {
-                    dbg('loadChats ERR: ' + err.code + ' ' + err.message);
+                    console.error('loadChats err:', err.code, err.message);
+                    showToast('Gagal load chat: ' + err.code, 'error');
                 });
         }
 
@@ -2062,61 +2057,100 @@
             const chatList = document.getElementById('chatList');
             const isGroup = chat.type === 'group';
             const otherUser = isGroup ? null : chat.participants.find(p => p !== currentUser.username);
-            
+            const isPinned = chat.pinned || false;
+
             const item = document.createElement('div');
-            item.className = 'chat-item';
-            item.onclick = () => isGroup ? openGroupChat(chatId, chat) : openChat(chatId, otherUser);
-            
+            item.className = 'chat-item' + (isPinned ? ' pinned-chat' : '');
+
             let avatarHtml, name;
-            
             if (isGroup) {
                 avatarHtml = '<i class="fas fa-users" style="font-size:20px"></i>';
                 name = chat.name || 'Grup Tanpa Nama';
             } else {
-                avatarHtml = '👤';
+                avatarHtml = '\u{1F464}';
                 name = otherUser || 'Unknown';
             }
-            
+
             const lastMsg = chat.lastMessage || 'Belum ada pesan';
             const time = chat.lastMessageTime ? formatTime(chat.lastMessageTime.toDate()) : '';
-            const unread = chat.unread && chat.unread[currentUser.username] || 0;
-            
-            item.innerHTML = `
-                <div class="chat-avatar">
-                    ${avatarHtml}
-                    ${isGroup ? '<div class="group-icon"><i class="fas fa-users" style="font-size:8px"></i></div>' : ''}
-                </div>
-                <div class="chat-info">
-                    <div class="chat-name-row">
-                        <div class="chat-name">${name}</div>
-                        ${isGroup ? '<i class="fas fa-users group-check"></i>' : '<span class="badge-placeholder"></span>'}
-                    </div>
-                    <div class="chat-preview">${lastMsg}</div>
-                </div>
-                <div class="chat-meta">
-                    <div class="chat-time">${time}</div>
-                    ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ''}
-                </div>
-            `;
-            
+            const unread = (chat.unread && chat.unread[currentUser.username]) || 0;
+
+            item.innerHTML =
+                '<div class="chat-avatar">' + avatarHtml +
+                    (isGroup ? '<div class="group-icon"><i class="fas fa-users" style="font-size:8px"></i></div>' : '') +
+                '</div>' +
+                '<div class="chat-info">' +
+                    '<div class="chat-name-row">' +
+                        '<div class="chat-name">' + name + '</div>' +
+                        (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:11px;margin-left:4px;"></i>' : '') +
+                        (isGroup ? '<i class="fas fa-users group-check"></i>' : '<span class="badge-placeholder"></span>') +
+                    '</div>' +
+                    '<div class="chat-preview">' + lastMsg + '</div>' +
+                '</div>' +
+                '<div class="chat-meta">' +
+                    '<div class="chat-time">' + time + '</div>' +
+                    (unread > 0 ? '<div class="unread-badge">' + unread + '</div>' : '') +
+                '</div>';
+
+            item.addEventListener('click', () => isGroup ? openGroupChat(chatId, chat) : openChat(chatId, otherUser));
+
+            // Long press = menu
+            let pressTimer;
+            item.addEventListener('touchstart', () => { pressTimer = setTimeout(() => showChatMenu(chatId, isPinned), 600); });
+            item.addEventListener('touchend', () => clearTimeout(pressTimer));
+            item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+            item.addEventListener('contextmenu', e => { e.preventDefault(); showChatMenu(chatId, isPinned); });
+
             chatList.appendChild(item);
 
-            // Fetch owner badge dari users collection (async, non-blocking)
             if (!isGroup && otherUser) {
-                db.collection('users').doc(otherUser).get().then(userDoc => {
-                    if (userDoc.exists && userDoc.data().isOwner) {
-                        const placeholder = item.querySelector('.badge-placeholder');
-                        if (placeholder) {
-                            placeholder.outerHTML = '<i class="fas fa-check-circle owner-check"></i>';
-                        }
-                        // Update avatar kalau ada
-                        if (userDoc.data().avatar) {
-                            const avatarDiv = item.querySelector('.chat-avatar');
-                            if (avatarDiv) avatarDiv.innerHTML = `<img src="${userDoc.data().avatar}" onerror="this.parentNode.innerHTML='👤'">`;
-                        }
+                db.collection('users').doc(otherUser).get().then(ud => {
+                    if (ud.exists && ud.data().isOwner) {
+                        const ph = item.querySelector('.badge-placeholder');
+                        if (ph) ph.outerHTML = '<i class="fas fa-check-circle owner-check"></i>';
+                    }
+                    if (ud.exists && ud.data().avatar) {
+                        const av = item.querySelector('.chat-avatar');
+                        if (av) av.innerHTML = '<img src="' + ud.data().avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.innerHTML='\u{1F464}'">';
                     }
                 }).catch(() => {});
             }
+        }
+
+        function showChatMenu(chatId, isPinned) {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:flex-end;';
+            overlay.innerHTML =
+                '<div style="background:var(--bg-secondary);width:100%;border-radius:16px 16px 0 0;padding:16px 16px 32px;">' +
+                    '<div style="font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">Opsi Chat</div>' +
+                    '<div class="menu-opt" id="mo-pin"><i class="fas fa-thumbtack"></i> ' + (isPinned ? 'Lepas Pin' : 'Pin Chat') + '</div>' +
+                    '<div class="menu-opt" id="mo-del" style="color:#ef4444;"><i class="fas fa-trash"></i> Hapus Chat</div>' +
+                    '<div class="menu-opt" id="mo-cancel">Batal</div>' +
+                '</div>';
+            document.body.appendChild(overlay);
+            overlay.querySelector('#mo-pin').onclick = () => { overlay.remove(); togglePinChat(chatId, isPinned); };
+            overlay.querySelector('#mo-del').onclick = () => { overlay.remove(); deleteChat(chatId); };
+            overlay.querySelector('#mo-cancel').onclick = () => overlay.remove();
+            overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+        }
+
+        async function togglePinChat(chatId, isPinned) {
+            try {
+                await db.collection('chats').doc(chatId).update({ pinned: !isPinned });
+                showToast(!isPinned ? 'Chat di-pin ✓' : 'Pin dilepas', 'success');
+            } catch(e) { showToast('Gagal: ' + e.message, 'error'); }
+        }
+
+        async function deleteChat(chatId) {
+            if (!confirm('Hapus chat ini? Semua pesan akan hilang.')) return;
+            try {
+                const msgs = await db.collection('chats').doc(chatId).collection('messages').get();
+                const batch = db.batch();
+                msgs.forEach(doc => batch.delete(doc.ref));
+                batch.delete(db.collection('chats').doc(chatId));
+                await batch.commit();
+                showToast('Chat dihapus', 'success');
+            } catch(e) { showToast('Gagal hapus: ' + e.message, 'error'); }
         }
 
         function filterChats() {
@@ -2133,7 +2167,6 @@
             currentChatId = chatId;
             currentChatUser = username;
             currentChatType = 'private';
-            dbg('openChat: ' + chatId + ' user: ' + username);
 
             document.getElementById('mainScreen').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
@@ -2151,7 +2184,7 @@
                     document.getElementById('roomName').innerHTML = username + (ud.isOwner ? ' <i class="fas fa-check-circle owner-check"></i>' : '');
                     document.getElementById('roomStatus').textContent = ud.bio || 'online';
                 }
-            }).catch(e => dbg('fetch user err: ' + e.message));
+            }).catch(e => console.error('fetch user err:', e));
         }
 
         async function openGroupChat(chatId, chatData) {
@@ -2188,45 +2221,53 @@
             const container = document.getElementById('messagesContainer');
             container.innerHTML = '';
             let lastDate = null;
-            dbg('loadMessages: chatId=' + currentChatId);
+            const renderedIds = new Set();
 
-            if (!db || !currentChatId) {
-                dbg('ERROR: db=' + !!db + ' chatId=' + currentChatId);
-                return;
-            }
-
+            if (!db || !currentChatId) return;
             if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
-            messagesUnsubscribe = db.collection('chats').doc(currentChatId)
-                .collection('messages')
-                .orderBy('timestamp', 'asc')
-                .onSnapshot(snapshot => {
-                    dbg('snapshot: ' + snapshot.docChanges().length + ' changes');
-                    snapshot.docChanges().forEach(change => {
+            function renderMsg(msg, docId) {
+                if (renderedIds.has(docId)) return;
+                renderedIds.add(docId);
+                try {
+                    const msgDate = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
+                    if (msgDate && msgDate !== lastDate) {
+                        const sep = document.createElement('div');
+                        sep.className = 'date-separator';
+                        sep.innerHTML = '<span>' + formatDate(msg.timestamp.toDate()) + '</span>';
+                        container.appendChild(sep);
+                        lastDate = msgDate;
+                    }
+                    appendMessage(msg, docId);
+                } catch(e) {
+                    console.error('renderMsg error:', e, msg);
+                }
+            }
+
+            const msgRef = db.collection('chats').doc(currentChatId)
+                .collection('messages').orderBy('timestamp', 'asc');
+
+            // Step 1: GET semua pesan lama dulu
+            msgRef.get().then(snapshot => {
+                snapshot.forEach(doc => renderMsg(doc.data(), doc.id));
+                scrollToBottom();
+
+                // Step 2: Listen pesan BARU setelah ini
+                messagesUnsubscribe = msgRef.onSnapshot(snap => {
+                    snap.docChanges().forEach(change => {
                         if (change.type === 'added') {
-                            const msg = change.doc.data();
-                            const docId = change.doc.id;
-                            if (container.querySelector('[data-msgid="' + docId + '"]')) return;
-                            try {
-                                const msgDate = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
-                                if (msgDate && msgDate !== lastDate) {
-                                    const sep = document.createElement('div');
-                                    sep.className = 'date-separator';
-                                    sep.innerHTML = '<span>' + formatDate(msg.timestamp.toDate()) + '</span>';
-                                    container.appendChild(sep);
-                                    lastDate = msgDate;
-                                }
-                                appendMessage(msg, docId);
-                            } catch(e) {
-                                dbg('render err: ' + e.message);
-                            }
+                            renderMsg(change.doc.data(), change.doc.id);
                         }
                     });
                     scrollToBottom();
                 }, err => {
-                    dbg('loadMessages ERR: ' + err.code + ': ' + err.message);
-                    showToast('Error: ' + err.code, 'error');
+                    console.error('messages listener err:', err.code, err.message);
+                    showToast('Error: ' + err.code + ' - ' + err.message, 'error');
                 });
+            }).catch(err => {
+                console.error('messages get err:', err.code, err.message);
+                showToast('Gagal load pesan: ' + err.code + ' - ' + err.message, 'error');
+            });
         }
 
         function appendMessage(msg, docId) {
