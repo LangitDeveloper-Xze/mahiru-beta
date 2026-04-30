@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MahiChat — Cyber Command Center</title>
+    <title>MahiChat</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,43 +15,19 @@
                         rajdhani: ['Rajdhani', 'sans-serif'],
                     },
                     colors: {
-                        cyber: {
-                            black: '#0a0a0f',
-                            dark: '#12121a',
-                            panel: '#1a1a2e',
-                            border: '#2d2d44',
-                            primary: '#00f0ff',
-                            secondary: '#ff006e',
-                            accent: '#8338ec',
-                            success: '#06ffa5',
-                            warning: '#ffbe0b',
-                            danger: '#ff006e',
-                            muted: '#6b7280'
-                        }
-                    },
-                    animation: {
-                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'glow': 'glow 2s ease-in-out infinite alternate',
-                        'slide-up': 'slideUp 0.3s ease-out',
-                        'fade-in': 'fadeIn 0.5s ease-out',
-                        'typing': 'typing 1s infinite',
-                    },
-                    keyframes: {
-                        glow: {
-                            '0%': { boxShadow: '0 0 5px #00f0ff, 0 0 10px #00f0ff' },
-                            '100%': { boxShadow: '0 0 20px #00f0ff, 0 0 30px #00f0ff' }
+                        dark: {
+                            bg: '#0a0a0f',
+                            panel: '#12121a',
+                            card: '#1a1a24',
+                            border: '#2a2a3a',
+                            hover: '#222230',
                         },
-                        slideUp: {
-                            '0%': { transform: 'translateY(20px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' }
-                        },
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' }
-                        },
-                        typing: {
-                            '0%, 100%': { opacity: '1' },
-                            '50%': { opacity: '0.3' }
+                        accent: {
+                            cyan: '#00d4ff',
+                            green: '#00ff88',
+                            red: '#ff3366',
+                            yellow: '#ffcc00',
+                            purple: '#a855f7',
                         }
                     }
                 }
@@ -59,383 +35,324 @@
         }
     </script>
     <style>
-        * { scrollbar-width: thin; scrollbar-color: #2d2d44 #0a0a0f; }
-        *::-webkit-scrollbar { width: 6px; }
-        *::-webkit-scrollbar-track { background: #0a0a0f; }
-        *::-webkit-scrollbar-thumb { background: #2d2d44; border-radius: 3px; }
-        *::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             background: #0a0a0f;
             color: #e2e8f0;
             font-family: 'Rajdhani', sans-serif;
-            overflow-x: hidden;
+            height: 100vh;
+            overflow: hidden;
         }
         
-        .glass-panel {
-            background: rgba(26, 26, 46, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(45, 45, 68, 0.8);
+        .font-orbitron { font-family: 'Orbitron', monospace; }
+        .font-rajdhani { font-family: 'Rajdhani', sans-serif; }
+        
+        .panel {
+            background: #12121a;
+            border: 1px solid #2a2a3a;
+            border-radius: 12px;
         }
         
-        .neon-border {
-            position: relative;
+        .input-field {
+            background: #0a0a0f;
+            border: 1px solid #2a2a3a;
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e2e8f0;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 15px;
+            width: 100%;
+            transition: all 0.2s;
         }
-        .neon-border::before {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            background: linear-gradient(45deg, #00f0ff, #8338ec, #ff006e);
-            border-radius: inherit;
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .neon-border:hover::before {
-            opacity: 1;
-        }
-        
-        .cyber-input {
-            background: rgba(10, 10, 15, 0.8);
-            border: 1px solid #2d2d44;
-            transition: all 0.3s;
-        }
-        .cyber-input:focus {
-            border-color: #00f0ff;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+        .input-field:focus {
             outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.1);
+        }
+        .input-field::placeholder { color: #555; }
+        
+        .btn-primary {
+            background: #00d4ff;
+            color: #0a0a0f;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-family: 'Orbitron', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .btn-primary:hover {
+            background: #33ddff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
         
-        .message-bubble {
-            position: relative;
-            animation: slideUp 0.3s ease-out;
+        .btn-danger {
+            background: transparent;
+            color: #ff3366;
+            border: 1px solid #ff3366;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-danger:hover {
+            background: #ff3366;
+            color: #0a0a0f;
         }
         
-        .status-dot {
+        .online-dot {
             width: 8px;
             height: 8px;
+            background: #00ff88;
             border-radius: 50%;
+            box-shadow: 0 0 6px #00ff88;
             display: inline-block;
-            animation: pulse 2s infinite;
-        }
-        .status-online { background: #06ffa5; box-shadow: 0 0 8px #06ffa5; }
-        .status-offline { background: #6b7280; }
-        
-        .scan-line {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: rgba(0, 240, 255, 0.3);
-            animation: scan 8s linear infinite;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        @keyframes scan {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100vh; opacity: 0; }
         }
         
-        .grid-bg {
-            background-image: 
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
-        
-        .btn-cyber {
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-        .btn-cyber::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: left 0.5s;
-        }
-        .btn-cyber:hover::after {
-            left: 100%;
-        }
-        
-        .tab-active {
-            border-bottom: 2px solid #00f0ff;
-            color: #00f0ff;
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-        }
-        
-        .log-entry {
-            border-left: 2px solid #2d2d44;
-            padding-left: 12px;
-            margin: 4px 0;
-            font-size: 0.85rem;
-            color: #6b7280;
-            transition: all 0.3s;
-        }
-        .log-entry:hover {
-            border-left-color: #00f0ff;
-            color: #e2e8f0;
-        }
-        
-        .dms-timer {
+        .owner-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            background: #00d4ff;
+            color: #0a0a0f;
+            font-size: 10px;
             font-family: 'Orbitron', monospace;
-            font-size: 3rem;
             font-weight: 700;
-            color: #ff006e;
-            text-shadow: 0 0 20px rgba(255, 0, 110, 0.5);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
         }
         
-        .ai-typing::after {
-            content: '...';
-            animation: typing 1s infinite;
+        .msg-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: msgIn 0.2s ease;
         }
+        
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .msg-own {
+            background: rgba(0, 212, 255, 0.12);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .msg-other {
+            background: #1a1a24;
+            border: 1px solid #2a2a3a;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .msg-system {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+            text-align: center;
+            margin: 0 auto;
+            font-size: 12px;
+            color: #ff3366;
+        }
+        
+        .tab-btn {
+            padding: 12px 16px;
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            color: #666;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #aaa; }
+        .tab-btn.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+        }
+        
+        .user-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .user-item:hover { background: #1a1a24; }
+        .user-item.active { background: rgba(0, 212, 255, 0.08); border: 1px solid rgba(0, 212, 255, 0.2); }
+        
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .timestamp {
+            font-size: 10px;
+            color: #555;
+            font-family: 'Orbitron', monospace;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 14px;
+        }
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: #00d4ff;
+            border-radius: 50%;
+            animation: typingBounce 1s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+        
+        @keyframes typingBounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-6px); }
+        }
+        
+        .unread-badge {
+            background: #ff3366;
+            color: #fff;
+            font-size: 10px;
+            font-family: 'Orbitron', monospace;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a3a4a; }
     </style>
 </head>
-<body class="grid-bg min-h-screen">
-    <div class="scan-line"></div>
+<body>
 
-    <!-- AUTH SECTION -->
-    <div id="authSection" class="fixed inset-0 z-50 flex items-center justify-center bg-cyber-black">
-        <div class="glass-panel rounded-2xl p-8 w-full max-w-md mx-4 animate-fade-in">
-            <div class="text-center mb-8">
-                <h1 class="font-orbitron text-4xl font-bold text-cyber-primary mb-2 tracking-wider">MAHICHAT</h1>
-                <p class="font-rajdhani text-cyber-muted text-lg">Cyber Command Center v2.0</p>
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" style="position:fixed; inset:0; z-index:100; background:#0a0a0f; display:flex; align-items:center; justify-content:center;">
+        <div class="panel" style="width:100%; max-width:380px; padding:40px; margin:20px;">
+            <div style="text-align:center; margin-bottom:32px;">
+                <h1 class="font-orbitron" style="font-size:28px; color:#00d4ff; letter-spacing:3px; margin-bottom:6px;">MAHICHAT</h1>
+                <p class="font-rajdhani" style="color:#555; font-size:14px;">Secure Communication Channel</p>
             </div>
-
-            <!-- Login Form -->
-            <div id="loginForm">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block font-orbitron text-sm text-cyber-primary mb-2 tracking-wide">USERNAME</label>
-                        <input type="text" id="loginUsername" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Enter username">
-                    </div>
-                    <div>
-                        <label class="block font-orbitron text-sm text-cyber-primary mb-2 tracking-wide">PASSWORD</label>
-                        <input type="password" id="loginPassword" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Enter password">
-                    </div>
-                    <button onclick="handleLogin()" class="btn-cyber w-full bg-cyber-primary text-cyber-black font-orbitron font-bold py-3 rounded-lg hover:bg-cyber-success transition-all">
-                        AUTHENTICATE
-                    </button>
-                </div>
-                <p class="text-center mt-6 text-cyber-muted font-rajdhani">
-                    No account? <button onclick="toggleAuth()" class="text-cyber-primary hover:text-cyber-success transition-colors font-semibold">Register here</button>
-                </p>
+            
+            <div style="margin-bottom:20px;">
+                <label class="font-orbitron" style="display:block; font-size:10px; color:#00d4ff; margin-bottom:8px; letter-spacing:1px;">USERNAME</label>
+                <input type="text" id="loginUser" class="input-field" placeholder="Enter username" autocomplete="off">
             </div>
-
-            <!-- Register Form -->
-            <div id="registerForm" class="hidden">
-                <div class="space-y-4">
-                    <div>
-                        <label class="block font-orbitron text-sm text-cyber-secondary mb-2 tracking-wide">USERNAME</label>
-                        <input type="text" id="regUsername" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Choose username">
-                    </div>
-                    <div>
-                        <label class="block font-orbitron text-sm text-cyber-secondary mb-2 tracking-wide">PASSWORD</label>
-                        <input type="password" id="regPassword" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Choose password">
-                    </div>
-                    <div>
-                        <label class="block font-orbitron text-sm text-cyber-secondary mb-2 tracking-wide">DISPLAY NAME</label>
-                        <input type="text" id="regDisplayName" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Your display name">
-                    </div>
-                    <button onclick="handleRegister()" class="btn-cyber w-full bg-cyber-secondary text-white font-orbitron font-bold py-3 rounded-lg hover:bg-cyber-danger transition-all">
-                        CREATE IDENTITY
-                    </button>
-                </div>
-                <p class="text-center mt-6 text-cyber-muted font-rajdhani">
-                    Have account? <button onclick="toggleAuth()" class="text-cyber-secondary hover:text-cyber-danger transition-colors font-semibold">Login here</button>
-                </p>
+            
+            <div style="margin-bottom:24px;">
+                <label class="font-orbitron" style="display:block; font-size:10px; color:#00d4ff; margin-bottom:8px; letter-spacing:1px;">PASSWORD</label>
+                <input type="password" id="loginPass" class="input-field" placeholder="Enter password">
             </div>
+            
+            <button onclick="doLogin()" class="btn-primary" style="width:100%; padding:14px;">ENTER SYSTEM</button>
+            
+            <p class="font-rajdhani" style="text-align:center; margin-top:20px; color:#444; font-size:13px;">
+                New user? Account will be created automatically
+            </p>
         </div>
     </div>
 
     <!-- MAIN APP -->
-    <div id="mainApp" class="hidden min-h-screen">
-        <!-- Header -->
-        <header class="glass-panel border-b border-cyber-border sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-cyber-primary flex items-center justify-center">
-                        <span class="font-orbitron text-cyber-black font-bold text-xl">M</span>
-                    </div>
-                    <div>
-                        <h1 class="font-orbitron text-xl font-bold text-cyber-primary tracking-wider">MAHICHAT</h1>
-                        <div class="flex items-center gap-2 text-xs font-rajdhani text-cyber-muted">
-                            <span class="status-dot status-online"></span>
-                            <span id="connectionStatus">ONLINE</span>
-                        </div>
-                    </div>
+    <div id="mainApp" style="display:none; height:100vh; display:flex; flex-direction:column;">
+        
+        <!-- TOP BAR -->
+        <div style="background:#12121a; border-bottom:1px solid #2a2a3a; padding:0 20px; display:flex; align-items:center; justify-content:space-between; height:56px; flex-shrink:0;">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:32px; height:32px; background:#00d4ff; border-radius:8px; display:flex; align-items:center; justify-content:center;">
+                    <span class="font-orbitron" style="color:#0a0a0f; font-size:14px; font-weight:800;">M</span>
                 </div>
-                
-                <div class="flex items-center gap-4">
-                    <div class="hidden md:flex items-center gap-2 glass-panel rounded-lg px-3 py-1">
-                        <span class="font-orbitron text-xs text-cyber-muted">USER:</span>
-                        <span id="currentUserDisplay" class="font-rajdhani font-semibold text-cyber-primary"></span>
-                    </div>
-                    <button onclick="logout()" class="font-orbitron text-xs text-cyber-danger hover:text-white transition-colors border border-cyber-danger px-3 py-1 rounded hover:bg-cyber-danger">
-                        TERMINATE
-                    </button>
+                <div>
+                    <span class="font-orbitron" style="color:#00d4ff; font-size:13px; font-weight:600;">MAHICHAT</span>
+                    <span style="color:#333; margin:0 8px;">|</span>
+                    <span id="headerUser" class="font-rajdhani" style="color:#888; font-size:14px;"></span>
+                    <span id="headerBadge"></span>
                 </div>
             </div>
-        </header>
+            <button onclick="doLogout()" class="btn-danger">LOGOUT</button>
+        </div>
 
-        <!-- Navigation Tabs -->
-        <nav class="glass-panel border-b border-cyber-border">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="flex gap-6 overflow-x-auto">
-                    <button onclick="switchTab('chat')" id="tab-chat" class="tab-active font-orbitron text-sm py-4 px-2 whitespace-nowrap transition-all hover:text-cyber-primary">
-                        GLOBAL CHAT
-                    </button>
-                    <button onclick="switchTab('ai')" id="tab-ai" class="font-orbitron text-sm py-4 px-2 text-cyber-muted whitespace-nowrap transition-all hover:text-cyber-primary">
-                        AI CORE
-                    </button>
-                    <button onclick="switchTab('dms')" id="tab-dms" class="font-orbitron text-sm py-4 px-2 text-cyber-muted whitespace-nowrap transition-all hover:text-cyber-primary">
-                        DEAD MAN'S SWITCH
-                    </button>
-                    <button onclick="switchTab('logs')" id="tab-logs" class="font-orbitron text-sm py-4 px-2 text-cyber-muted whitespace-nowrap transition-all hover:text-cyber-primary">
-                        SYSTEM LOGS
-                    </button>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Content Area -->
-        <main class="max-w-7xl mx-auto px-4 py-6">
+        <div style="display:flex; flex:1; overflow:hidden;">
             
-            <!-- CHAT TAB -->
-            <div id="content-chat" class="space-y-4">
-                <div class="grid lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
-                    <!-- Chat Area -->
-                    <div class="lg:col-span-2 glass-panel rounded-xl flex flex-col">
-                        <div class="p-4 border-b border-cyber-border flex items-center justify-between">
-                            <h2 class="font-orbitron text-lg text-cyber-primary">GLOBAL CHANNEL</h2>
-                            <span id="onlineCount" class="font-rajdhani text-sm text-cyber-muted">0 operators online</span>
-                        </div>
-                        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
-                            <!-- Messages injected here -->
-                        </div>
-                        <div class="p-4 border-t border-cyber-border">
-                            <div class="flex gap-2">
-                                <input type="text" id="chatInput" class="cyber-input flex-1 px-4 py-2 rounded-lg text-white font-rajdhani" placeholder="Transmit message..." onkeypress="if(event.key==='Enter')sendMessage()">
-                                <button onclick="sendMessage()" class="btn-cyber bg-cyber-primary text-cyber-black font-orbitron font-bold px-6 py-2 rounded-lg hover:bg-cyber-success transition-all">
-                                    SEND
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Online Users -->
-                    <div class="glass-panel rounded-xl p-4">
-                        <h3 class="font-orbitron text-sm text-cyber-primary mb-4 tracking-wide">ACTIVE OPERATORS</h3>
-                        <div id="onlineUsers" class="space-y-2">
-                            <!-- Users injected here -->
-                        </div>
-                    </div>
+            <!-- SIDEBAR -->
+            <div style="width:280px; background:#12121a; border-right:1px solid #2a2a3a; display:flex; flex-direction:column; flex-shrink:0;">
+                
+                <!-- TABS -->
+                <div style="display:flex; border-bottom:1px solid #2a2a3a;">
+                    <button onclick="switchTab('global')" id="tabGlobal" class="tab-btn active" style="flex:1;">GLOBAL</button>
+                    <button onclick="switchTab('private')" id="tabPrivate" class="tab-btn" style="flex:1;">PRIVATE</button>
+                </div>
+
+                <!-- GLOBAL USER LIST -->
+                <div id="globalList" style="flex:1; overflow-y:auto; padding:8px;">
+                    <div class="font-orbitron" style="padding:12px 12px 8px; font-size:10px; color:#444; letter-spacing:1px;">ONLINE USERS</div>
+                    <div id="onlineUsers"></div>
+                </div>
+
+                <!-- PRIVATE CHAT LIST -->
+                <div id="privateList" style="display:none; flex:1; overflow-y:auto; padding:8px;">
+                    <div class="font-orbitron" style="padding:12px 12px 8px; font-size:10px; color:#444; letter-spacing:1px;">CONVERSATIONS</div>
+                    <div id="privateChats"></div>
                 </div>
             </div>
 
-            <!-- AI TAB -->
-            <div id="content-ai" class="hidden h-[calc(100vh-200px)]">
-                <div class="max-w-3xl mx-auto glass-panel rounded-xl flex flex-col h-full">
-                    <div class="p-4 border-b border-cyber-border">
-                        <h2 class="font-orbitron text-lg text-cyber-accent">NEURAL CORE v1.0</h2>
-                        <p class="font-rajdhani text-sm text-cyber-muted">Advanced heuristic response system</p>
-                    </div>
-                    <div id="aiMessages" class="flex-1 overflow-y-auto p-4 space-y-3">
-                        <div class="message-bubble flex gap-3">
-                            <div class="w-8 h-8 rounded-full bg-cyber-accent flex items-center justify-center flex-shrink-0">
-                                <span class="font-orbitron text-xs text-white">AI</span>
-                            </div>
-                            <div class="glass-panel rounded-lg p-3 max-w-[80%]">
-                                <p class="font-rajdhani text-sm">System initialized. I am Neural Core, your digital assistant. How may I assist your operations today?</p>
-                                <span class="text-xs text-cyber-muted mt-1 block font-orbitron">CORE</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-4 border-t border-cyber-border">
-                        <div class="flex gap-2">
-                            <input type="text" id="aiInput" class="cyber-input flex-1 px-4 py-2 rounded-lg text-white font-rajdhani" placeholder="Query neural core..." onkeypress="if(event.key==='Enter')sendAI()">
-                            <button onclick="sendAI()" class="btn-cyber bg-cyber-accent text-white font-orbitron font-bold px-6 py-2 rounded-lg hover:bg-cyber-primary transition-all">
-                                QUERY
-                            </button>
-                        </div>
-                    </div>
+            <!-- CHAT AREA -->
+            <div style="flex:1; display:flex; flex-direction:column; background:#0a0a0f;">
+                
+                <!-- CHAT HEADER -->
+                <div style="padding:14px 20px; border-bottom:1px solid #2a2a3a; display:flex; align-items:center; gap:10px;">
+                    <span id="chatTitle" class="font-orbitron" style="color:#e2e8f0; font-size:13px;">GLOBAL CHANNEL</span>
+                    <span id="chatStatus" class="online-dot" style="display:none;"></span>
+                    <span id="chatTyping" class="font-rajdhani" style="color:#00d4ff; font-size:12px; display:none;">typing...</span>
                 </div>
-            </div>
 
-            <!-- DMS TAB -->
-            <div id="content-dms" class="hidden">
-                <div class="max-w-2xl mx-auto space-y-6">
-                    <div class="glass-panel rounded-xl p-6 text-center">
-                        <h2 class="font-orbitron text-2xl text-cyber-danger mb-2">DEAD MAN'S SWITCH</h2>
-                        <p class="font-rajdhani text-cyber-muted mb-6">If you fail to check in, your message will be transmitted automatically.</p>
-                        
-                        <div id="dmsActive" class="hidden">
-                            <div class="dms-timer font-orbitron mb-4" id="dmsTimer">00:00:00</div>
-                            <p class="font-rajdhani text-sm text-cyber-muted mb-4">Time remaining until auto-transmit</p>
-                            <button onclick="checkInDMS()" class="btn-cyber bg-cyber-success text-cyber-black font-orbitron font-bold px-8 py-3 rounded-lg hover:bg-cyber-primary transition-all mb-4">
-                                CHECK IN — RESET TIMER
-                            </button>
-                            <button onclick="cancelDMS()" class="block mx-auto font-orbitron text-sm text-cyber-danger hover:text-white border border-cyber-danger px-4 py-2 rounded hover:bg-cyber-danger transition-all">
-                                ABORT PROTOCOL
-                            </button>
-                        </div>
-                        
-                        <div id="dmsSetup">
-                            <div class="space-y-4 text-left max-w-md mx-auto">
-                                <div>
-                                    <label class="block font-orbitron text-sm text-cyber-danger mb-2">TIMER (MINUTES)</label>
-                                    <input type="number" id="dmsTimerInput" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-orbitron text-center text-xl" value="60" min="1">
-                                </div>
-                                <div>
-                                    <label class="block font-orbitron text-sm text-cyber-danger mb-2">EMERGENCY MESSAGE</label>
-                                    <textarea id="dmsMessage" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani h-32 resize-none" placeholder="Enter message to be transmitted..."></textarea>
-                                </div>
-                                <div>
-                                    <label class="block font-orbitron text-sm text-cyber-danger mb-2">RECIPIENT (USERNAME)</label>
-                                    <input type="text" id="dmsRecipient" class="cyber-input w-full px-4 py-3 rounded-lg text-white font-rajdhani" placeholder="Target username">
-                                </div>
-                                <button onclick="activateDMS()" class="btn-cyber w-full bg-cyber-danger text-white font-orbitron font-bold py-3 rounded-lg hover:bg-red-600 transition-all">
-                                    ACTIVATE PROTOCOL
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <!-- MESSAGES -->
+                <div id="messagesArea" style="flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:8px;"></div>
 
-            <!-- LOGS TAB -->
-            <div id="content-logs" class="hidden">
-                <div class="glass-panel rounded-xl p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="font-orbitron text-lg text-cyber-primary">SYSTEM LOGS</h2>
-                        <button onclick="clearLogs()" class="font-orbitron text-xs text-cyber-muted hover:text-cyber-danger transition-colors border border-cyber-border px-3 py-1 rounded">
-                            CLEAR LOGS
-                        </button>
-                    </div>
-                    <div id="logsContainer" class="space-y-1 font-mono text-sm max-h-[calc(100vh-250px)] overflow-y-auto">
-                        <!-- Logs injected here -->
-                    </div>
+                <!-- INPUT -->
+                <div style="padding:14px 20px; border-top:1px solid #2a2a3a; display:flex; gap:10px;">
+                    <input type="text" id="msgInput" class="input-field" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendMessage()">
+                    <button onclick="sendMessage()" class="btn-primary" style="padding:10px 24px;">SEND</button>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- FIREBASE -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
-        // ============================================
-        // FIREBASE CONFIG — GANTI DENGAN CONFIG KAMU
-        // ============================================
+        // ========================================
+        // FIREBASE CONFIG - GANTI INI
+        // ========================================
         const firebaseConfig = {
   apiKey: "AIzaSyD3oa-IMRp7K6pHR2mEzEZy5QSnLl8w220",
   authDomain: "dark-new.firebaseapp.com",
@@ -447,215 +364,121 @@
   measurementId: "G-Q5Q6FDXLD1"
 };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.database();
 
-        // ============================================
-        // GLOBAL STATE
-        // ============================================
-        let currentUser = null;
-        let currentTab = 'chat';
-        let dmsInterval = null;
-        let dmsTimeRemaining = 0;
-        let logs = [];
+        // ========================================
+        // CONFIG
+        // ========================================
+        const OWNER_USERNAME = "owner";
 
-        // ============================================
-        // AUTH FUNCTIONS
-        // ============================================
-        function toggleAuth() {
-            document.getElementById('loginForm').classList.toggle('hidden');
-            document.getElementById('registerForm').classList.toggle('hidden');
-        }
+        // ========================================
+        // STATE
+        // ========================================
+        let me = null;
+        let currentTab = "global";
+        let currentPrivate = null;
+        let unreadCounts = {};
+        let typingTimeouts = {};
 
-        async function handleRegister() {
-            const username = document.getElementById('regUsername').value.trim().toLowerCase();
-            const password = document.getElementById('regPassword').value;
-            const displayName = document.getElementById('regDisplayName').value.trim();
-
-            if (!username || !password || !displayName) {
-                alert('All fields required');
-                return;
-            }
-
-            try {
-                const snapshot = await db.ref('users/' + username).once('value');
-                if (snapshot.exists()) {
-                    alert('Username already exists');
-                    return;
-                }
-
-                await db.ref('users/' + username).set({
-                    username: username,
-                    password: password,
-                    displayName: displayName,
-                    createdAt: Date.now(),
-                    lastLogin: Date.now()
-                });
-
-                addLog('IDENTITY_CREATED', `New identity registered: ${username}`);
-                alert('Identity created. Authenticate now.');
-                toggleAuth();
-            } catch (error) {
-                addLog('REGISTER_ERROR', error.message);
-                alert('Registration failed');
-            }
-        }
-
-        async function handleLogin() {
-            const username = document.getElementById('loginUsername').value.trim().toLowerCase();
-            const password = document.getElementById('loginPassword').value;
+        // ========================================
+        // LOGIN
+        // ========================================
+        async function doLogin() {
+            const username = document.getElementById("loginUser").value.trim().toLowerCase();
+            const password = document.getElementById("loginPass").value;
 
             if (!username || !password) {
-                alert('Credentials required');
+                alert("Username and password required");
                 return;
             }
 
-            try {
-                const snapshot = await db.ref('users/' + username).once('value');
-                const userData = snapshot.val();
+            const userRef = db.ref("users/" + username);
+            const snap = await userRef.once("value");
+            const exists = snap.exists();
 
-                if (!userData || userData.password !== password) {
-                    alert('Invalid credentials');
-                    addLog('AUTH_FAIL', `Failed login attempt: ${username}`);
+            if (!exists) {
+                await userRef.set({
+                    username: username,
+                    password: password,
+                    createdAt: Date.now(),
+                    isOwner: username === OWNER_USERNAME
+                });
+            } else {
+                const data = snap.val();
+                if (data.password !== password) {
+                    alert("Wrong password");
                     return;
                 }
-
-                currentUser = {
-                    username: userData.username,
-                    displayName: userData.displayName
-                };
-
-                await db.ref('users/' + username + '/lastLogin').set(Date.now());
-                
-                // Set online status
-                const userStatusRef = db.ref('online/' + username);
-                userStatusRef.set({
-                    displayName: userData.displayName,
-                    status: 'online',
-                    lastSeen: Date.now()
-                });
-                userStatusRef.onDisconnect().remove();
-
-                addLog('AUTH_SUCCESS', `User authenticated: ${username}`);
-                showMainApp();
-            } catch (error) {
-                addLog('LOGIN_ERROR', error.message);
-                alert('Authentication failed');
             }
-        }
 
-        function logout() {
-            if (currentUser) {
-                db.ref('online/' + currentUser.username).remove();
+            me = {
+                username: username,
+                isOwner: username === OWNER_USERNAME
+            };
+
+            // Set online
+            const onlineRef = db.ref("online/" + username);
+            await onlineRef.set({
+                username: username,
+                isOwner: me.isOwner,
+                joinedAt: Date.now()
+            });
+            onlineRef.onDisconnect().remove();
+
+            // Show app
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("mainApp").style.display = "flex";
+            document.getElementById("headerUser").textContent = username;
+
+            if (me.isOwner) {
+                document.getElementById("headerBadge").innerHTML = 
+                    `<span class="owner-badge">OWNER</span>`;
             }
-            currentUser = null;
-            clearInterval(dmsInterval);
-            document.getElementById('authSection').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-            addLog('SESSION_TERMINATED', 'User logged out');
+
+            listenOnline();
+            listenGlobalMessages();
+            listenPrivateMessages();
         }
 
-        function showMainApp() {
-            document.getElementById('authSection').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('currentUserDisplay').textContent = currentUser.displayName;
-            
-            initChat();
-            initOnlineUsers();
-            renderLogs();
+        function doLogout() {
+            if (me) {
+                db.ref("online/" + me.username).remove();
+            }
+            location.reload();
         }
 
-        // ============================================
-        // TAB SWITCHING
-        // ============================================
-        function switchTab(tab) {
-            currentTab = tab;
-            
-            document.querySelectorAll('[id^="tab-"]').forEach(el => {
-                el.classList.remove('tab-active');
-                el.classList.add('text-cyber-muted');
-            });
-            document.getElementById('tab-' + tab).classList.add('tab-active');
-            document.getElementById('tab-' + tab).classList.remove('text-cyber-muted');
+        // ========================================
+        // ONLINE USERS
+        // ========================================
+        function listenOnline() {
+            db.ref("online").on("value", snap => {
+                const users = snap.val() || {};
+                const container = document.getElementById("onlineUsers");
+                container.innerHTML = "";
 
-            document.querySelectorAll('[id^="content-"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('content-' + tab).classList.remove('hidden');
+                Object.values(users).forEach(user => {
+                    const div = document.createElement("div");
+                    div.className = "user-item";
+                    div.onclick = () => startPrivateChat(user.username, user.isOwner);
 
-            addLog('TAB_SWITCH', `User navigated to ${tab.toUpperCase()}`);
-        }
+                    const badge = user.isOwner 
+                        ? `<span class="owner-badge">OWNER</span>` 
+                        : "";
 
-        // ============================================
-        // CHAT SYSTEM
-        // ============================================
-        function initChat() {
-            const chatRef = db.ref('messages');
-            chatRef.limitToLast(50).on('child_added', (snapshot) => {
-                const msg = snapshot.val();
-                appendMessage(msg);
-            });
-        }
-
-        function appendMessage(msg) {
-            const container = document.getElementById('chatMessages');
-            const isMe = msg.username === currentUser.username;
-            
-            const div = document.createElement('div');
-            div.className = 'message-bubble flex gap-3 ' + (isMe ? 'flex-row-reverse' : '');
-            
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full ${isMe ? 'bg-cyber-success' : 'bg-cyber-primary'} flex items-center justify-center flex-shrink-0">
-                    <span class="font-orbitron text-xs text-cyber-black">${msg.displayName.charAt(0).toUpperCase()}</span>
-                </div>
-                <div class="${isMe ? 'bg-cyber-success/20' : 'glass-panel'} rounded-lg p-3 max-w-[70%]">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="font-orbitron text-xs ${isMe ? 'text-cyber-success' : 'text-cyber-primary'}">${msg.displayName}</span>
-                        <span class="text-xs text-cyber-muted font-rajdhani">${new Date(msg.timestamp).toLocaleTimeString()}</span>
-                    </div>
-                    <p class="font-rajdhani text-sm text-white">${escapeHtml(msg.text)}</p>
-                </div>
-            `;
-            
-            container.appendChild(div);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            
-            if (!text) return;
-
-            db.ref('messages').push({
-                username: currentUser.username,
-                displayName: currentUser.displayName,
-                text: text,
-                timestamp: Date.now()
-            });
-
-            addLog('MSG_SENT', `Message transmitted by ${currentUser.username}`);
-            input.value = '';
-        }
-
-        function initOnlineUsers() {
-            const onlineRef = db.ref('online');
-            onlineRef.on('value', (snapshot) => {
-                const users = snapshot.val() || {};
-                const container = document.getElementById('onlineUsers');
-                const count = Object.keys(users).length;
-                
-                document.getElementById('onlineCount').textContent = `${count} operator${count !== 1 ? 's' : ''} online`;
-                container.innerHTML = '';
-
-                Object.entries(users).forEach(([username, data]) => {
-                    const div = document.createElement('div');
-                    div.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-cyber-panel transition-colors cursor-pointer';
                     div.innerHTML = `
-                        <span class="status-dot status-online"></span>
-                        <div>
-                            <p class="font-rajdhani font-semibold text-sm text-white">${data.displayName}</p>
-                            <p class="font-orbitron text-xs text-cyber-muted">${username}</p>
+                        <div class="avatar" style="background:${stringColor(user.username)}; color:#0a0a0f;">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center;">
+                                <span class="font-rajdhani" style="font-weight:600; font-size:14px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${user.username}</span>
+                                ${badge}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+                                <span class="online-dot" style="width:6px; height:6px;"></span>
+                                <span class="font-rajdhani" style="font-size:11px; color:#555;">online</span>
+                            </div>
                         </div>
                     `;
                     container.appendChild(div);
@@ -663,229 +486,242 @@
             });
         }
 
-        // ============================================
-        // AI CORE
-        // ============================================
-        const aiResponses = {
-            'hello': 'Greetings, operator. Systems are functioning within normal parameters.',
-            'help': 'Available commands: status, time, weather, joke, clear. Or ask me anything.',
-            'status': 'All systems nominal. Neural Core operating at 97% efficiency.',
-            'time': () => `Current system time: ${new Date().toLocaleString()}`,
-            'joke': 'Why do programmers prefer dark mode? Because light attracts bugs.',
-            'who are you': 'I am Neural Core v1.0, an advanced heuristic response system integrated into MahiChat.',
-            'default': 'Interesting query. Processing... I do not have specific data on that topic, but I am continuously learning.'
-        };
+        // ========================================
+        // TABS
+        // ========================================
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById("tabGlobal").classList.toggle("active", tab === "global");
+            document.getElementById("tabPrivate").classList.toggle("active", tab === "private");
+            document.getElementById("globalList").style.display = tab === "global" ? "block" : "none";
+            document.getElementById("privateList").style.display = tab === "private" ? "block" : "none";
 
-        function sendAI() {
-            const input = document.getElementById('aiInput');
-            const text = input.value.trim();
+            if (tab === "global") {
+                currentPrivate = null;
+                document.getElementById("chatTitle").textContent = "GLOBAL CHANNEL";
+                document.getElementById("chatStatus").style.display = "none";
+                loadGlobalMessages();
+            } else {
+                renderPrivateList();
+                if (currentPrivate) {
+                    loadPrivateMessages(currentPrivate);
+                } else {
+                    document.getElementById("messagesArea").innerHTML = "";
+                    document.getElementById("chatTitle").textContent = "SELECT A CONVERSATION";
+                }
+            }
+        }
+
+        // ========================================
+        // GLOBAL CHAT
+        // ========================================
+        let globalMessages = [];
+
+        function listenGlobalMessages() {
+            db.ref("messages/global").limitToLast(100).on("child_added", snap => {
+                const msg = snap.val();
+                globalMessages.push(msg);
+                if (currentTab === "global") {
+                    appendMessage(msg, "global");
+                }
+            });
+        }
+
+        function loadGlobalMessages() {
+            const area = document.getElementById("messagesArea");
+            area.innerHTML = "";
+            globalMessages.forEach(msg => appendMessage(msg, "global", true));
+        }
+
+        // ========================================
+        // PRIVATE CHAT
+        // ========================================
+        function startPrivateChat(targetUsername, isOwner) {
+            if (targetUsername === me.username) return;
             
-            if (!text) return;
+            currentTab = "private";
+            currentPrivate = targetUsername;
+            switchTab("private");
 
-            const container = document.getElementById('aiMessages');
-            
-            // User message
-            const userDiv = document.createElement('div');
-            userDiv.className = 'message-bubble flex gap-3 flex-row-reverse';
-            userDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-cyber-success flex items-center justify-center flex-shrink-0">
-                    <span class="font-orbitron text-xs text-cyber-black">U</span>
-                </div>
-                <div class="bg-cyber-success/20 rounded-lg p-3 max-w-[70%]">
-                    <p class="font-rajdhani text-sm text-white">${escapeHtml(text)}</p>
-                </div>
+            const chatId = getChatId(me.username, targetUsername);
+            if (!unreadCounts[chatId]) unreadCounts[chatId] = 0;
+
+            document.getElementById("chatTitle").innerHTML = `
+                ${targetUsername}
+                ${isOwner ? '<span class="owner-badge">OWNER</span>' : ''}
             `;
-            container.appendChild(userDiv);
+            document.getElementById("chatStatus").style.display = "inline-block";
 
-            // AI typing indicator
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'aiTyping';
-            typingDiv.className = 'message-bubble flex gap-3';
-            typingDiv.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-cyber-accent flex items-center justify-center flex-shrink-0">
-                    <span class="font-orbitron text-xs text-white">AI</span>
-                </div>
-                <div class="glass-panel rounded-lg p-3">
-                    <p class="font-rajdhani text-sm ai-typing">Processing</p>
-                </div>
-            `;
-            container.appendChild(typingDiv);
-            container.scrollTop = container.scrollHeight;
+            loadPrivateMessages(targetUsername);
+        }
 
-            // Response delay
-            setTimeout(() => {
-                document.getElementById('aiTyping').remove();
+        function getChatId(u1, u2) {
+            return [u1, u2].sort().join("_");
+        }
+
+        function listenPrivateMessages() {
+            db.ref("messages/private").on("child_added", snap => {
+                const msg = snap.val();
+                const chatId = getChatId(msg.from, msg.to);
                 
-                const lowerText = text.toLowerCase();
-                let response = aiResponses.default;
-                
-                for (const [key, value] of Object.entries(aiResponses)) {
-                    if (lowerText.includes(key)) {
-                        response = typeof value === 'function' ? value() : value;
-                        break;
+                if (msg.to === me.username && msg.from !== me.username) {
+                    if (currentTab !== "private" || currentPrivate !== msg.from) {
+                        unreadCounts[chatId] = (unreadCounts[chatId] || 0) + 1;
+                        if (currentTab === "private") renderPrivateList();
                     }
                 }
 
-                const aiDiv = document.createElement('div');
-                aiDiv.className = 'message-bubble flex gap-3';
-                aiDiv.innerHTML = `
-                    <div class="w-8 h-8 rounded-full bg-cyber-accent flex items-center justify-center flex-shrink-0">
-                        <span class="font-orbitron text-xs text-white">AI</span>
-                    </div>
-                    <div class="glass-panel rounded-lg p-3 max-w-[80%]">
-                        <p class="font-rajdhani text-sm text-white">${response}</p>
-                        <span class="text-xs text-cyber-muted mt-1 block font-orbitron">NEURAL CORE</span>
-                    </div>
-                `;
-                container.appendChild(aiDiv);
-                container.scrollTop = container.scrollHeight;
-                
-                addLog('AI_QUERY', `Query: "${text.substring(0, 30)}..."`);
-            }, 1000);
-
-            input.value = '';
-        }
-
-        // ============================================
-        // DEAD MAN'S SWITCH
-        // ============================================
-        function activateDMS() {
-            const minutes = parseInt(document.getElementById('dmsTimerInput').value);
-            const message = document.getElementById('dmsMessage').value.trim();
-            const recipient = document.getElementById('dmsRecipient').value.trim();
-
-            if (!minutes || !message || !recipient) {
-                alert('All fields required for protocol activation');
-                return;
-            }
-
-            dmsTimeRemaining = minutes * 60;
-            
-            document.getElementById('dmsSetup').classList.add('hidden');
-            document.getElementById('dmsActive').classList.remove('hidden');
-
-            addLog('DMS_ACTIVATED', `Protocol activated: ${minutes}min timer`);
-
-            dmsInterval = setInterval(() => {
-                dmsTimeRemaining--;
-                updateDMSTimer();
-
-                if (dmsTimeRemaining <= 0) {
-                    triggerDMS(message, recipient);
+                if (currentTab === "private" && currentPrivate && 
+                    (msg.from === currentPrivate || msg.to === currentPrivate)) {
+                    appendMessage(msg, "private");
                 }
-            }, 1000);
-
-            updateDMSTimer();
-        }
-
-        function updateDMSTimer() {
-            const hours = Math.floor(dmsTimeRemaining / 3600);
-            const minutes = Math.floor((dmsTimeRemaining % 3600) / 60);
-            const seconds = dmsTimeRemaining % 60;
-            
-            document.getElementById('dmsTimer').textContent = 
-                `${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
-        }
-
-        function checkInDMS() {
-            const minutes = parseInt(document.getElementById('dmsTimerInput').value);
-            dmsTimeRemaining = minutes * 60;
-            addLog('DMS_CHECKIN', 'Operator checked in — timer reset');
-            
-            // Visual feedback
-            const timer = document.getElementById('dmsTimer');
-            timer.style.color = '#06ffa5';
-            setTimeout(() => timer.style.color = '#ff006e', 500);
-        }
-
-        function cancelDMS() {
-            clearInterval(dmsInterval);
-            dmsTimeRemaining = 0;
-            document.getElementById('dmsActive').classList.add('hidden');
-            document.getElementById('dmsSetup').classList.remove('hidden');
-            addLog('DMS_CANCELLED', 'Protocol aborted by operator');
-        }
-
-        function triggerDMS(message, recipient) {
-            clearInterval(dmsInterval);
-            
-            // Send as system message to chat
-            db.ref('messages').push({
-                username: 'SYSTEM',
-                displayName: 'DEAD_SWITCH',
-                text: `[AUTOMATED TRANSMISSION] To: ${recipient} | ${message}`,
-                timestamp: Date.now()
             });
-
-            addLog('DMS_TRIGGERED', 'Auto-transmission executed');
-            alert('Dead Man\'s Switch triggered. Message transmitted.');
-            cancelDMS();
         }
 
-        // ============================================
-        // LOGS SYSTEM
-        // ============================================
-        function addLog(type, message) {
-            const log = {
-                timestamp: Date.now(),
-                type: type,
-                message: message,
-                user: currentUser ? currentUser.username : 'GUEST'
-            };
-            logs.unshift(log);
-            
-            // Keep only last 100
-            if (logs.length > 100) logs.pop();
-            
-            if (currentTab === 'logs') {
-                renderLogs();
-            }
-        }
+        function loadPrivateMessages(target) {
+            const area = document.getElementById("messagesArea");
+            area.innerHTML = "";
 
-        function renderLogs() {
-            const container = document.getElementById('logsContainer');
-            container.innerHTML = '';
-
-            logs.forEach(log => {
-                const time = new Date(log.timestamp).toLocaleTimeString();
-                const div = document.createElement('div');
-                div.className = 'log-entry';
+            db.ref("messages/private").once("value", snap => {
+                const messages = snap.val() || {};
+                const chatId = getChatId(me.username, target);
                 
-                let color = 'text-cyber-muted';
-                if (log.type.includes('ERROR') || log.type.includes('FAIL')) color = 'text-cyber-danger';
-                else if (log.type.includes('SUCCESS') || log.type.includes('CHECKIN')) color = 'text-cyber-success';
-                else if (log.type.includes('DMS')) color = 'text-cyber-secondary';
-                else if (log.type.includes('AI')) color = 'text-cyber-accent';
-                else if (log.type.includes('MSG')) color = 'text-cyber-primary';
-
-                div.innerHTML = `
-                    <span class="text-cyber-muted">[${time}]</span>
-                    <span class="${color} font-orbitron text-xs">${log.type}</span>
-                    <span class="text-cyber-muted">::</span>
-                    <span class="text-white">${escapeHtml(log.message)}</span>
-                    <span class="text-cyber-muted">@{${log.user}}</span>
-                `;
-                container.appendChild(div);
+                Object.values(messages).forEach(msg => {
+                    if (getChatId(msg.from, msg.to) === chatId) {
+                        appendMessage(msg, "private", true);
+                    }
+                });
             });
         }
 
-        function clearLogs() {
-            logs = [];
-            renderLogs();
-            addLog('LOGS_CLEARED', 'System logs purged');
+        function renderPrivateList() {
+            const container = document.getElementById("privateChats");
+            container.innerHTML = "";
+
+            db.ref("online").once("value", snap => {
+                const users = snap.val() || {};
+                
+                Object.values(users).forEach(user => {
+                    if (user.username === me.username) return;
+                    
+                    const chatId = getChatId(me.username, user.username);
+                    const unread = unreadCounts[chatId] || 0;
+                    const isActive = currentPrivate === user.username;
+
+                    const div = document.createElement("div");
+                    div.className = "user-item" + (isActive ? " active" : "");
+                    div.onclick = () => startPrivateChat(user.username, user.isOwner);
+
+                    div.innerHTML = `
+                        <div class="avatar" style="background:${stringColor(user.username)}; color:#0a0a0f;">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; justify-content:space-between;">
+                                <span class="font-rajdhani" style="font-weight:600; font-size:14px; color:#e2e8f0;">${user.username}</span>
+                                ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+                            </div>
+                            <div style="display:flex; align-items:center; gap:4px; margin-top:2px;">
+                                <span class="online-dot" style="width:6px; height:6px;"></span>
+                                <span class="font-rajdhani" style="font-size:11px; color:#555;">online</span>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            });
         }
 
-        // ============================================
-        // UTILITIES
-        // ============================================
+        // ========================================
+        // SEND MESSAGE
+        // ========================================
+        function sendMessage() {
+            const input = document.getElementById("msgInput");
+            const text = input.value.trim();
+            if (!text) return;
+
+            const msg = {
+                from: me.username,
+                text: text,
+                timestamp: Date.now()
+            };
+
+            if (currentTab === "global") {
+                msg.displayName = me.username + (me.isOwner ? " [OWNER]" : "");
+                db.ref("messages/global").push(msg);
+            } else if (currentTab === "private" && currentPrivate) {
+                msg.to = currentPrivate;
+                db.ref("messages/private").push(msg);
+                
+                // Clear unread
+                const chatId = getChatId(me.username, currentPrivate);
+                unreadCounts[chatId] = 0;
+                renderPrivateList();
+            }
+
+            input.value = "";
+        }
+
+        // ========================================
+        // APPEND MESSAGE TO UI
+        // ========================================
+        function appendMessage(msg, type, skipAnim) {
+            const area = document.getElementById("messagesArea");
+            const isOwn = msg.from === me.username;
+
+            const div = document.createElement("div");
+            div.style.display = "flex";
+            div.style.flexDirection = "column";
+            div.style.alignItems = isOwn ? "flex-end" : "flex-start";
+            if (!skipAnim) div.style.animation = "msgIn 0.2s ease";
+
+            let nameHtml = "";
+            let badgeHtml = "";
+
+            if (type === "global") {
+                const isOwner = msg.displayName && msg.displayName.includes("[OWNER]");
+                const displayName = msg.displayName ? msg.displayName.replace(" [OWNER]", "") : msg.from;
+                
+                badgeHtml = isOwner ? '<span class="owner-badge">OWNER</span>' : "";
+                nameHtml = `<span class="font-rajdhani" style="font-weight:600; font-size:12px; color:#888; margin-bottom:4px; display:block;">${displayName}${badgeHtml}</span>`;
+            }
+
+            const time = new Date(msg.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+            div.innerHTML = `
+                ${nameHtml}
+                <div class="msg-bubble ${isOwn ? 'msg-own' : 'msg-other'}">
+                    <span class="font-rajdhani" style="color:#e2e8f0;">${escapeHtml(msg.text)}</span>
+                    <span class="timestamp" style="display:block; margin-top:4px; text-align:${isOwn ? 'left' : 'right'};">${time}</span>
+                </div>
+            `;
+
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // ========================================
+        // UTILS
+        // ========================================
+        function stringColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colors = ["#00d4ff", "#00ff88", "#a855f7", "#ffcc00", "#ff3366", "#f472b6"];
+            return colors[Math.abs(hash) % colors.length];
+        }
+
         function escapeHtml(text) {
-            const div = document.createElement('div');
+            const div = document.createElement("div");
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Init
-        addLog('SYSTEM_INIT', 'MahiChat Cyber Command Center initialized');
+        // Enter to send
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("loginUser").focus();
+        });
     </script>
 </body>
 </html>
