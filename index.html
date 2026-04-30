@@ -2023,29 +2023,25 @@
         }
 
         let chatsUnsubscribe = null;
+        let messagesUnsubscribe = null;
 
         function loadChats() {
             const chatList = document.getElementById('chatList');
             const emptyChats = document.getElementById('emptyChats');
-
             if (!db) return;
-
             if (chatsUnsubscribe) { chatsUnsubscribe(); chatsUnsubscribe = null; }
-
             chatsUnsubscribe = db.collection('chats')
                 .where('participants', 'array-contains', currentUser.username)
                 .where('type', '==', activeTab === 'chats' ? 'private' : 'group')
                 .orderBy('lastMessageTime', 'desc')
                 .onSnapshot(snapshot => {
                     chatList.innerHTML = '';
-                    if (snapshot.empty) {
-                        emptyChats.style.display = 'flex';
-                        return;
-                    }
+                    if (snapshot.empty) { emptyChats.style.display = 'flex'; return; }
                     emptyChats.style.display = 'none';
                     snapshot.forEach(doc => renderChatItem(doc.data(), doc.id));
                 }, err => {
                     console.error('loadChats error:', err);
+                    showToast('Error load chat: ' + err.message, 'error');
                 });
         }
 
@@ -2120,36 +2116,33 @@
         }
 
         // ==================== CHAT ROOM ====================
-        async function openChat(chatId, username) {
+        function openChat(chatId, username) {
+            // Set state dulu SEBELUM apapun
             currentChatId = chatId;
             currentChatUser = username;
             currentChatType = 'private';
 
-            // Tampilkan chatRoom DULU supaya ga blank
+            // Tampilkan chatRoom
             document.getElementById('mainScreen').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('chatRoom').classList.add('active');
-            document.getElementById('roomName').innerHTML = username;
+            document.getElementById('roomName').textContent = username;
             document.getElementById('roomStatus').textContent = 'online';
             document.getElementById('roomGroupBadge').classList.add('hidden');
             document.getElementById('roomOwnerBadge').classList.add('hidden');
 
-            // Fetch user data (non-blocking)
-            try {
-                const userDoc = await db.collection('users').doc(username).get();
+            // Load messages LANGSUNG tanpa nunggu apapun
+            loadMessages();
+
+            // Fetch user info di background (tidak blocking)
+            db.collection('users').doc(username).get().then(userDoc => {
                 if (userDoc.exists) {
                     const userData = userDoc.data();
-                    document.getElementById('roomName').innerHTML = `
-                        ${username}
-                        ${userData.isOwner ? '<i class="fas fa-check-circle owner-check"></i>' : ''}
-                    `;
+                    document.getElementById('roomName').innerHTML = username +
+                        (userData.isOwner ? ' <i class="fas fa-check-circle owner-check"></i>' : '');
                     document.getElementById('roomStatus').textContent = userData.bio || 'online';
                 }
-            } catch (err) {
-                console.error('openChat fetch error:', err);
-            }
-
-            loadMessages();
+            }).catch(err => console.error('fetch user info error:', err));
         }
 
         async function openGroupChat(chatId, chatData) {
@@ -2169,20 +2162,15 @@
             loadMessages();
         }
 
-        let messagesUnsubscribe = null;
-
         function backToMain() {
             if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
-
             currentChatId = null;
             currentChatUser = null;
             currentChatType = 'private';
-            
             document.getElementById('chatRoom').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('createGroupScreen').classList.remove('active');
             document.getElementById('mainScreen').classList.add('active');
-            
             document.getElementById('attachMenu').classList.remove('show');
             document.getElementById('stickerPanel').classList.remove('show');
         }
@@ -2192,11 +2180,15 @@
             container.innerHTML = '';
             let lastDate = null;
 
-            if (!db || !currentChatId) return;
+            if (!db || !currentChatId) {
+                showToast('Error: chatId kosong', 'error');
+                return;
+            }
 
             if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
-            messagesUnsubscribe = db.collection('chats').doc(currentChatId)
+            const chatIdSnapshot = currentChatId; // simpan supaya tidak berubah
+            messagesUnsubscribe = db.collection('chats').doc(chatIdSnapshot)
                 .collection('messages')
                 .orderBy('timestamp', 'asc')
                 .onSnapshot(snapshot => {
@@ -2204,29 +2196,26 @@
                         if (change.type === 'added') {
                             const msg = change.doc.data();
                             const docId = change.doc.id;
-
-                            // Jangan render kalau sudah ada (hindari duplikat)
-                            if (container.querySelector(`[data-msgid="${docId}"]`)) return;
-
+                            if (container.querySelector('[data-msgid="' + docId + '"]')) return;
                             try {
                                 const msgDate = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
                                 if (msgDate && msgDate !== lastDate) {
                                     const sep = document.createElement('div');
                                     sep.className = 'date-separator';
-                                    sep.innerHTML = `<span>${formatDate(msg.timestamp.toDate())}</span>`;
+                                    sep.innerHTML = '<span>' + formatDate(msg.timestamp.toDate()) + '</span>';
                                     container.appendChild(sep);
                                     lastDate = msgDate;
                                 }
                                 appendMessage(msg, docId);
                             } catch(e) {
-                                console.error('appendMessage error:', e, msg);
+                                console.error('render msg error:', e);
                             }
                         }
                     });
                     scrollToBottom();
                 }, err => {
                     console.error('loadMessages error:', err);
-                    showToast('Gagal memuat pesan: ' + err.message, 'error');
+                    showToast('Gagal load pesan: ' + err.message, 'error');
                 });
         }
 
@@ -2235,7 +2224,7 @@
             const isOwn = msg.sender === currentUser.username;
             
             const wrapper = document.createElement('div');
-            wrapper.className = `message-wrapper ${isOwn ? 'own' : ''}`;
+            wrapper.className = 'message-wrapper ' + (isOwn ? 'own' : '');
             if (docId) wrapper.setAttribute('data-msgid', docId);
             
             let content = '';
@@ -2307,9 +2296,9 @@
                 }
                 await db.collection('chats').doc(currentChatId).update(updateData);
             } catch (err) {
-                showToast('Gagal kirim: ' + err.message, 'error');
+                showToast('Gagal kirim: ' + err.code + ' - ' + err.message, 'error');
                 input.value = text;
-                console.error('sendMessage error:', err);
+                console.error('sendMessage error:', err.code, err.message, 'chatId:', currentChatId);
             }
         }
 
