@@ -1463,6 +1463,7 @@
         <p>Developer Tools terdeteksi. Mohon tutup DevTools untuk melanjutkan.</p>
     </div>
 
+    <div id="debugPanel"></div>
     <div class="app-container">
         <!-- LOADING -->
         <div class="loading-overlay" id="loadingOverlay">
@@ -1822,6 +1823,19 @@
         const ADMIN_USER = 'langitdev';
         const ADMIN_PASS = 'langitdev2026@123';
 
+        // ==================== DEBUG ====================
+        const debugLogs = [];
+        function dbg(msg) {
+            const panel = document.getElementById('debugPanel');
+            if (!panel) return;
+            const time = new Date().toLocaleTimeString();
+            debugLogs.push('[' + time + '] ' + msg);
+            if (debugLogs.length > 20) debugLogs.shift();
+            panel.textContent = debugLogs.join('\n');
+            panel.style.display = 'block';
+            console.log('[DBG]', msg);
+        }
+
         // ==================== INIT ====================
         function init() {
     generateCaptcha();
@@ -2040,8 +2054,7 @@
                     emptyChats.style.display = 'none';
                     snapshot.forEach(doc => renderChatItem(doc.data(), doc.id));
                 }, err => {
-                    console.error('loadChats error:', err);
-                    showToast('Error load chat: ' + err.message, 'error');
+                    dbg('loadChats ERR: ' + err.code + ' ' + err.message);
                 });
         }
 
@@ -2117,12 +2130,11 @@
 
         // ==================== CHAT ROOM ====================
         function openChat(chatId, username) {
-            // Set state dulu SEBELUM apapun
             currentChatId = chatId;
             currentChatUser = username;
             currentChatType = 'private';
+            dbg('openChat: ' + chatId + ' user: ' + username);
 
-            // Tampilkan chatRoom
             document.getElementById('mainScreen').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('chatRoom').classList.add('active');
@@ -2131,18 +2143,15 @@
             document.getElementById('roomGroupBadge').classList.add('hidden');
             document.getElementById('roomOwnerBadge').classList.add('hidden');
 
-            // Load messages LANGSUNG tanpa nunggu apapun
             loadMessages();
 
-            // Fetch user info di background (tidak blocking)
             db.collection('users').doc(username).get().then(userDoc => {
                 if (userDoc.exists) {
-                    const userData = userDoc.data();
-                    document.getElementById('roomName').innerHTML = username +
-                        (userData.isOwner ? ' <i class="fas fa-check-circle owner-check"></i>' : '');
-                    document.getElementById('roomStatus').textContent = userData.bio || 'online';
+                    const ud = userDoc.data();
+                    document.getElementById('roomName').innerHTML = username + (ud.isOwner ? ' <i class="fas fa-check-circle owner-check"></i>' : '');
+                    document.getElementById('roomStatus').textContent = ud.bio || 'online';
                 }
-            }).catch(err => console.error('fetch user info error:', err));
+            }).catch(e => dbg('fetch user err: ' + e.message));
         }
 
         async function openGroupChat(chatId, chatData) {
@@ -2179,19 +2188,20 @@
             const container = document.getElementById('messagesContainer');
             container.innerHTML = '';
             let lastDate = null;
+            dbg('loadMessages: chatId=' + currentChatId);
 
             if (!db || !currentChatId) {
-                showToast('Error: chatId kosong', 'error');
+                dbg('ERROR: db=' + !!db + ' chatId=' + currentChatId);
                 return;
             }
 
             if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
 
-            const chatIdSnapshot = currentChatId; // simpan supaya tidak berubah
-            messagesUnsubscribe = db.collection('chats').doc(chatIdSnapshot)
+            messagesUnsubscribe = db.collection('chats').doc(currentChatId)
                 .collection('messages')
                 .orderBy('timestamp', 'asc')
                 .onSnapshot(snapshot => {
+                    dbg('snapshot: ' + snapshot.docChanges().length + ' changes');
                     snapshot.docChanges().forEach(change => {
                         if (change.type === 'added') {
                             const msg = change.doc.data();
@@ -2208,21 +2218,20 @@
                                 }
                                 appendMessage(msg, docId);
                             } catch(e) {
-                                console.error('render msg error:', e);
+                                dbg('render err: ' + e.message);
                             }
                         }
                     });
                     scrollToBottom();
                 }, err => {
-                    console.error('loadMessages error:', err);
-                    showToast('Gagal load pesan: ' + err.message, 'error');
+                    dbg('loadMessages ERR: ' + err.code + ': ' + err.message);
+                    showToast('Error: ' + err.code, 'error');
                 });
         }
 
         function appendMessage(msg, docId) {
             const container = document.getElementById('messagesContainer');
             const isOwn = msg.sender === currentUser.username;
-            
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper ' + (isOwn ? 'own' : '');
             if (docId) wrapper.setAttribute('data-msgid', docId);
@@ -2296,9 +2305,9 @@
                 }
                 await db.collection('chats').doc(currentChatId).update(updateData);
             } catch (err) {
-                showToast('Gagal kirim: ' + err.code + ' - ' + err.message, 'error');
+                showToast('Gagal kirim: ' + err.message, 'error');
                 input.value = text;
-                console.error('sendMessage error:', err.code, err.message, 'chatId:', currentChatId);
+                console.error('sendMessage error:', err);
             }
         }
 
