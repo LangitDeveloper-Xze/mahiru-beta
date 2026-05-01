@@ -1,4 +1,4 @@
-p<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@ p<!DOCTYPE html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
     <style>
         * {
@@ -16,7 +16,6 @@ p<!DOCTYPE html>
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            user-select: none;
         }
 
         :root {
@@ -32,12 +31,11 @@ p<!DOCTYPE html>
             --text-secondary: #8696a0;
             --text-muted: #667781;
             --border: #2a2a2a;
-            --own-bubble: linear-gradient(135deg, #005c4b 0%, #007a63 100%);
+            --own-bubble: #005c4b;
             --other-bubble: #1a1a1a;
             --danger: #ef4444;
             --owner-badge: #53bdeb;
             --group-badge: #f59e0b;
-            --reply-bg: rgba(0,168,132,0.15);
         }
 
         body {
@@ -655,29 +653,16 @@ p<!DOCTYPE html>
             text-overflow: ellipsis;
         }
 
-        .typing-indicator {
-            font-size: 12px;
-            color: var(--accent-light);
-            font-style: italic;
-            animation: pulse 1.5s infinite;
-        }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
 
         .messages-container::-webkit-scrollbar {
             width: 4px;
         }
 
-        /* === MODERN CHAT BUBBLES === */
         .message-wrapper {
             display: flex;
             width: 100%;
-            margin-bottom: 6px;
-            position: relative;
-            padding: 0 4px;
+            margin-bottom: 4px;
         }
 
         .message-wrapper.own {
@@ -686,65 +671,55 @@ p<!DOCTYPE html>
 
         .message-bubble {
             max-width: 78%;
-            padding: 10px 14px;
+            padding: 9px 13px;
             border-radius: 18px;
             position: relative;
             word-wrap: break-word;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            transition: transform 0.15s ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.18);
         }
-
         .message-wrapper.own .message-bubble {
-            background: var(--own-bubble);
+            background: linear-gradient(135deg, #1a7f5a 0%, #10b981 100%);
             border-bottom-right-radius: 4px;
-            margin-left: 40px;
         }
-
+        .message-wrapper.own .message-text { color: #fff; }
+        .message-wrapper.own .message-time { color: rgba(255,255,255,0.75); }
         .message-wrapper:not(.own) .message-bubble {
             background: var(--other-bubble);
             border-bottom-left-radius: 4px;
-            margin-right: 40px;
-            border: 1px solid var(--border);
         }
-
-        .message-bubble:active {
-            transform: scale(0.98);
-        }
-
-        .message-reply {
-            background: var(--reply-bg);
-            border-left: 3px solid var(--accent);
-            padding: 6px 10px;
-            border-radius: 8px;
-            margin-bottom: 6px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .message-reply-sender {
-            color: var(--accent-light);
-            font-weight: 600;
-            font-size: 11px;
-            margin-bottom: 2px;
-        }
-
-        .message-reply-text {
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .reply-quote { background:rgba(0,0,0,0.15);border-left:3px solid var(--accent);border-radius:6px;padding:5px 8px;margin-bottom:5px;font-size:12px;max-height:54px;overflow:hidden; }
+        .reply-quote-sender { color:var(--accent);font-weight:600;margin-bottom:2px; }
+        .reply-quote-text { color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .msg-reactions { display:flex;flex-wrap:wrap;gap:4px;margin-top:5px; }
+        .reaction-pill { background:rgba(0,0,0,0.2);border-radius:12px;padding:2px 8px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:3px; }
+        .reaction-pill.own-reaction { background:rgba(16,185,129,0.3);border:1px solid var(--accent); }
+        .reaction-count { font-size:11px;color:var(--text-secondary); }
+        .reply-bar { display:none;background:var(--bg-tertiary);border-top:2px solid var(--accent);padding:8px 16px;align-items:center;gap:10px; }
+        .reply-bar.show { display:flex; }
+        .reply-bar-content { flex:1;min-width:0; }
+        .reply-bar-sender { font-size:12px;color:var(--accent);font-weight:600; }
+        .reply-bar-text { font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .reply-bar-close { width:28px;height:28px;border-radius:50%;background:var(--bg-hover);border:none;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+        .typing-indicator { display:none;align-items:center;gap:8px;padding:4px 16px 0;font-size:12px;color:var(--text-muted);font-style:italic; }
+        .typing-dots { display:flex;gap:3px; }
+        .typing-dots span { width:5px;height:5px;background:var(--accent);border-radius:50%;animation:typingBounce 1.2s infinite; }
+        .typing-dots span:nth-child(2){animation-delay:0.2s}.typing-dots span:nth-child(3){animation-delay:0.4s}
+        @keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+        .online-dot { width:9px;height:9px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:4px;box-shadow:0 0 0 2px rgba(34,197,94,0.3); }
+        .menu-opt { padding:14px 8px;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:12px;font-size:15px; }
+        .menu-opt:active { background:var(--bg-hover); }
+        .pinned-chat { border-left:3px solid var(--accent); }
 
         .message-sender {
             font-size: 12px;
             color: var(--accent-light);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             font-weight: 600;
         }
 
         .message-text {
-            font-size: 14.5px;
-            line-height: 1.45;
+            font-size: 14px;
+            line-height: 1.4;
             color: var(--text-primary);
         }
 
@@ -753,7 +728,6 @@ p<!DOCTYPE html>
             border-radius: 12px;
             margin-bottom: 4px;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
 
         .message-sticker {
@@ -773,18 +747,13 @@ p<!DOCTYPE html>
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 10px;
+            padding: 8px;
             background: rgba(0,0,0,0.2);
             border-radius: 10px;
             margin-bottom: 4px;
             cursor: pointer;
             text-decoration: none;
             color: inherit;
-            transition: background 0.2s;
-        }
-
-        .message-file:hover {
-            background: rgba(0,0,0,0.3);
         }
 
         .message-file i {
@@ -830,43 +799,6 @@ p<!DOCTYPE html>
             color: var(--owner-badge);
         }
 
-        /* === REACTIONS === */
-        .message-reactions {
-            display: flex;
-            gap: 4px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-        }
-
-        .reaction-badge {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2px 8px;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .reaction-badge:hover {
-            background: var(--bg-hover);
-            transform: scale(1.1);
-        }
-
-        .reaction-badge.own-reaction {
-            border-color: var(--accent);
-            background: rgba(0,168,132,0.15);
-        }
-
-        .reaction-count {
-            font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-
         .input-area {
             background: var(--bg-secondary);
             padding: 10px 16px;
@@ -876,48 +808,6 @@ p<!DOCTYPE html>
             border-top: 1px solid var(--border);
             flex-shrink: 0;
             position: relative;
-        }
-
-        .reply-preview {
-            position: absolute;
-            top: -50px;
-            left: 16px;
-            right: 16px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: none;
-            align-items: center;
-            gap: 10px;
-            z-index: 25;
-            animation: slideDown 0.2s ease;
-        }
-
-        .reply-preview.show {
-            display: flex;
-        }
-
-        .reply-preview-text {
-            flex: 1;
-            font-size: 13px;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .reply-preview-close {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-10px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
 
         .attach-btn {
@@ -985,7 +875,6 @@ p<!DOCTYPE html>
 
         .send-btn:hover {
             background: var(--accent-hover);
-            transform: scale(1.05);
         }
 
         .send-btn:disabled {
@@ -1127,91 +1016,6 @@ p<!DOCTYPE html>
 
         .custom-sticker-item .add-new i {
             font-size: 24px;
-        }
-
-        /* === MESSAGE CONTEXT MENU === */
-        .message-context-menu {
-            position: fixed;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 8px;
-            display: none;
-            flex-direction: column;
-            gap: 4px;
-            z-index: 1000;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            min-width: 160px;
-        }
-
-        .message-context-menu.show {
-            display: flex;
-            animation: popUp 0.15s ease;
-        }
-
-        .context-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text-primary);
-            transition: background 0.15s;
-        }
-
-        .context-option:hover {
-            background: var(--bg-hover);
-        }
-
-        .context-option i {
-            font-size: 14px;
-            width: 20px;
-            text-align: center;
-        }
-
-        .context-option.reply-opt i { color: var(--accent); }
-        .context-option.react-opt i { color: #fbbf24; }
-        .context-option.delete-opt { color: var(--danger); }
-        .context-option.delete-opt i { color: var(--danger); }
-
-        /* === REACTION PICKER === */
-        .reaction-picker {
-            position: fixed;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 8px 12px;
-            display: none;
-            gap: 6px;
-            z-index: 1001;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-        }
-
-        .reaction-picker.show {
-            display: flex;
-            animation: popUp 0.15s ease;
-        }
-
-        .reaction-picker-btn {
-            background: none;
-            border: none;
-            font-size: 22px;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 50%;
-            transition: all 0.2s;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .reaction-picker-btn:hover {
-            background: var(--bg-hover);
-            transform: scale(1.2);
         }
 
         /* === MODALS === */
@@ -1593,7 +1397,7 @@ p<!DOCTYPE html>
         /* === DATE SEPARATOR === */
         .date-separator {
             text-align: center;
-            margin: 20px 0;
+            margin: 16px 0;
             position: relative;
         }
 
@@ -1601,62 +1405,50 @@ p<!DOCTYPE html>
             content: '';
             position: absolute;
             top: 50%;
-            left: 20%;
-            right: 20%;
+            left: 0;
+            right: 0;
             height: 1px;
             background: var(--border);
         }
 
         .date-separator span {
             background: var(--bg-primary);
-            padding: 0 16px;
-            font-size: 11px;
+            padding: 0 12px;
+            font-size: 12px;
             color: var(--text-muted);
             position: relative;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        /* === TYPING INDICATOR BAR === */
-        .typing-bar {
-            background: var(--bg-secondary);
-            padding: 6px 16px;
-            border-top: 1px solid var(--border);
+        /* === SECURITY OVERLAY === */
+        .security-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: 9999;
             display: none;
             align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .typing-bar.show {
+        .security-overlay.show {
             display: flex;
         }
 
-        .typing-dots {
-            display: flex;
-            gap: 3px;
+        .security-overlay i {
+            font-size: 64px;
+            color: var(--danger);
         }
 
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--accent);
-            border-radius: 50%;
-            animation: typingBounce 1.4s infinite ease-in-out both;
+        .security-overlay h2 {
+            font-size: 24px;
         }
 
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes typingBounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
-
-        .typing-text {
-            font-size: 12px;
+        .security-overlay p {
             color: var(--text-secondary);
+            text-align: center;
+            padding: 0 40px;
         }
 
         @keyframes fadeIn {
@@ -1687,6 +1479,13 @@ p<!DOCTYPE html>
     </style>
 </head>
 <body>
+    <!-- SECURITY OVERLAY -->
+    <div class="security-overlay" id="securityOverlay">
+        <i class="fas fa-shield-alt"></i>
+        <h2>Akses Ditolak</h2>
+        <p>Developer Tools terdeteksi. Mohon tutup DevTools untuk melanjutkan.</p>
+    </div>
+
     <div class="app-container">
         <!-- LOADING -->
         <div class="loading-overlay" id="loadingOverlay">
@@ -1802,29 +1601,24 @@ p<!DOCTYPE html>
                 </div>
             </div>
             <div class="messages-container" id="messagesContainer"></div>
-            
-            <div class="typing-bar" id="typingBar">
-                <div class="typing-dots">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-                <span class="typing-text" id="typingText">sedang mengetik...</span>
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+                <span id="typingText">mengetik...</span>
             </div>
-
-            <div class="input-area">
-                <div class="reply-preview" id="replyPreview">
-                    <i class="fas fa-reply" style="color:var(--accent);"></i>
-                    <div class="reply-preview-text" id="replyPreviewText"></div>
-                    <button class="reply-preview-close" onclick="cancelReply()">
-                        <i class="fas fa-times"></i>
-                    </button>
+            <div class="reply-bar" id="replyBar">
+                <i class="fas fa-reply" style="color:var(--accent);flex-shrink:0;"></i>
+                <div class="reply-bar-content">
+                    <div class="reply-bar-sender" id="replyBarSender"></div>
+                    <div class="reply-bar-text" id="replyBarText"></div>
                 </div>
+                <button class="reply-bar-close" onclick="cancelReply()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="input-area">
                 <button class="attach-btn" onclick="toggleAttachMenu()">
                     <i class="fas fa-plus"></i>
                 </button>
                 <div class="message-input-container">
-                    <textarea class="message-input" id="messageInput" placeholder="Ketik pesan..." rows="1" oninput="handleTyping()" onkeydown="handleEnter(event)"></textarea>
+                    <textarea class="message-input" id="messageInput" placeholder="Ketik pesan..." rows="1" onkeydown="handleEnter(event)" oninput="onTyping()"></textarea>
                 </div>
                 <button class="send-btn" id="sendBtn" onclick="sendMessage()">
                     <i class="fas fa-paper-plane"></i>
@@ -1978,34 +1772,10 @@ p<!DOCTYPE html>
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="modal-body" id="groupInfoBody"></div>
+                <div class="modal-body" id="groupInfoBody">
+                    <!-- Content rendered by JS -->
+                </div>
             </div>
-        </div>
-
-        <!-- MESSAGE CONTEXT MENU -->
-        <div class="message-context-menu" id="messageContextMenu">
-            <div class="context-option reply-opt" onclick="replyToMessage()">
-                <i class="fas fa-reply"></i>
-                <span>Balas</span>
-            </div>
-            <div class="context-option react-opt" onclick="showReactionPicker()">
-                <i class="fas fa-smile"></i>
-                <span>Reaksi</span>
-            </div>
-            <div class="context-option delete-opt" onclick="deleteMessage()">
-                <i class="fas fa-trash"></i>
-                <span>Hapus</span>
-            </div>
-        </div>
-
-        <!-- REACTION PICKER -->
-        <div class="reaction-picker" id="reactionPicker">
-            <button class="reaction-picker-btn" onclick="addReaction('❤️')">❤️</button>
-            <button class="reaction-picker-btn" onclick="addReaction('👍')">👍</button>
-            <button class="reaction-picker-btn" onclick="addReaction('😂')">😂</button>
-            <button class="reaction-picker-btn" onclick="addReaction('😮')">😮</button>
-            <button class="reaction-picker-btn" onclick="addReaction('😢')">😢</button>
-            <button class="reaction-picker-btn" onclick="addReaction('🔥')">🔥</button>
         </div>
 
         <!-- TOAST -->
@@ -2013,19 +1783,66 @@ p<!DOCTYPE html>
     </div>
 
     <script>
+        // ==================== SECURITY ====================
+        // Anti DevTools
+        (function() {
+            const threshold = 160;
+            const checkDevTools = () => {
+                const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+                const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+                if (widthThreshold || heightThreshold) {
+                    document.getElementById('securityOverlay').classList.add('show');
+                    setTimeout(() => location.reload(), 2000);
+                }
+            };
+            
+            // Check periodically
+            setInterval(checkDevTools, 1000);
+            
+            // Anti right click
+            document.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Anti F12, Ctrl+Shift+I, Ctrl+U
+            document.addEventListener('keydown', e => {
+                if (
+                    e.key === 'F12' ||
+                    (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                    (e.ctrlKey && e.key === 'U') ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'C')
+                ) {
+                    e.preventDefault();
+                    document.getElementById('securityOverlay').classList.add('show');
+                    return false;
+                }
+            });
+            
+            // Anti debugger
+            setInterval(() => {
+                const start = performance.now();
+                debugger;
+                const end = performance.now();
+                if (end - start > 100) {
+                    document.getElementById('securityOverlay').classList.add('show');
+                    location.reload();
+                }
+            }, 1000);
+        })();
+
         // ==================== FIREBASE CONFIG ====================
         const firebaseConfig = {
-  apiKey: "AIzaSyD3oa-IMRp7K6pHR2mEzEZy5QSnLl8w220",
-  authDomain: "dark-new.firebaseapp.com",
-  databaseURL: "https://dark-new-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "dark-new",
-  storageBucket: "dark-new.firebasestorage.app",
-  messagingSenderId: "742928896156",
-  appId: "1:742928896156:web:aa29240deeddb023a29d59",
-  measurementId: "G-Q5Q6FDXLD1"
-};
+        apiKey  :"AIzaSyBVx6DLy4_2IcPP0z7NGesK8dEf-0PEKkM",
+        authDomain: "mahichat-c0b14.firebaseapp.com",
+        projectId: "mahichat-c0b14",
+        storageBucket: "mahichat-c0b14.firebasestorage.app",
+        messagingSenderId: "832230033896",
+        appId: "1:832230033896:web:9f9dfc15cbf12b9a6a3c5d",
+        measurementId: "G-JEECNHR2CL"
+        };
 
-        let db, auth, storage, rtdb;
+        let db, auth, storage;
         let currentUser = null;
         let currentChatId = null;
         let currentChatUser = null;
@@ -2035,15 +1852,12 @@ p<!DOCTYPE html>
         let activeTab = 'chats';
         let groupMembers = [];
         let customStickers = JSON.parse(localStorage.getItem('mahichat_stickers') || '[]');
-        let selectedMessageId = null;
         let replyingTo = null;
         let typingTimeout = null;
-        let presenceRef = null;
-        let connectedRef = null;
-        let chatListeners = [];
-        let messageListeners = [];
-        let typingListener = null;
-        let presenceListener = null;
+        let typingListenerUnsub = null;
+        let onlineListenerUnsub = null;
+        let chatsUnsubscribe = null;
+        let messagesUnsubscribe = null;
 
         // Admin credentials
         const ADMIN_USER = 'langitdev';
@@ -2051,147 +1865,33 @@ p<!DOCTYPE html>
 
         // ==================== INIT ====================
         function init() {
-            generateCaptcha();
-            
-            try {
-                firebase.initializeApp(firebaseConfig);
-                rtdb = firebase.database();
-                auth = firebase.auth();
-                storage = firebase.storage();
-            } catch (e) {
-                console.log('Firebase already initialized');
-                rtdb = firebase.database();
-                auth = firebase.auth();
-                storage = firebase.storage();
-            }
-            
-            initStickerGrid();
-            
-            auth.onAuthStateChanged(async (firebaseUser) => {
-                const savedRaw = localStorage.getItem('mahichat_user');
-                if (!savedRaw) { showLogin(); return; }
-                const savedUser = JSON.parse(savedRaw);
-                if (firebaseUser) {
-                    currentUser = savedUser;
-                    setupPresence();
-                    showMainScreen();
-                } else {
-                    localStorage.removeItem('mahichat_user');
-                    showLogin();
-                    showToast('Sesi kamu habis, silakan login ulang', 'error');
-                }
-            });
-
-            // Close context menus on outside click
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.message-context-menu') && !e.target.closest('.message-bubble')) {
-                    hideContextMenu();
-                }
-                if (!e.target.closest('.reaction-picker')) {
-                    hideReactionPicker();
-                }
-                if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
-                    document.getElementById('attachMenu').classList.remove('show');
-                }
-                if (!e.target.closest('.attach-option.sticker') && !e.target.closest('.sticker-panel')) {
-                    document.getElementById('stickerPanel').classList.remove('show');
-                }
-            });
-
-            // Auto-resize textarea
-            document.getElementById('messageInput').addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
-            });
+    generateCaptcha();
+    
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        storage = firebase.storage();
+    } catch (e) {
+        console.log('Firebase already initialized');
+    }
+    
+    initStickerGrid();
+    
+    auth.onAuthStateChanged(async (firebaseUser) => {
+        const savedRaw = localStorage.getItem('mahichat_user');
+        if (!savedRaw) { showLogin(); return; }
+        const savedUser = JSON.parse(savedRaw);
+        if (firebaseUser) {
+            currentUser = savedUser;
+            showMainScreen();
+        } else {
+            localStorage.removeItem('mahichat_user');
+            showLogin();
+            showToast('Sesi kamu habis, silakan login ulang', 'error');
         }
-
-        // ==================== PRESENCE SYSTEM ====================
-        function setupPresence() {
-            if (!currentUser) return;
-            
-            const uid = currentUser.username;
-            const userStatusRef = rtdb.ref('presence/' + uid);
-            const userStatusFirestoreRef = rtdb.ref('users/' + uid + '/status');
-            
-            connectedRef = rtdb.ref('.info/connected');
-            
-            connectedRef.on('value', (snap) => {
-                if (snap.val() === true) {
-                    // When disconnect, set offline
-                    userStatusRef.onDisconnect().set({
-                        state: 'offline',
-                        lastSeen: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    // Set online
-                    userStatusRef.set({
-                        state: 'online',
-                        lastSeen: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    
-                    userStatusFirestoreRef.set('online');
-                }
-            });
-            
-            presenceRef = userStatusRef;
-        }
-
-        function cleanupPresence() {
-            if (presenceRef && currentUser) {
-                presenceRef.set({
-                    state: 'offline',
-                    lastSeen: firebase.database.ServerValue.TIMESTAMP
-                });
-            }
-            if (connectedRef) {
-                connectedRef.off();
-            }
-        }
-
-        // ==================== TYPING INDICATOR ====================
-        function handleTyping() {
-            if (!currentChatId || !currentUser) return;
-            
-            const typingRef = rtdb.ref('typing/' + currentChatId + '/' + currentUser.username);
-            typingRef.set(true);
-            
-            if (typingTimeout) clearTimeout(typingTimeout);
-            typingTimeout = setTimeout(() => {
-                typingRef.set(false);
-            }, 3000);
-        }
-
-        function listenTyping() {
-            if (typingListener) typingListener.off();
-            if (!currentChatId) return;
-            
-            const typingRef = rtdb.ref('typing/' + currentChatId);
-            typingListener = typingRef.on('value', (snapshot) => {
-                const data = snapshot.val() || {};
-                const othersTyping = Object.keys(data).filter(u => u !== currentUser.username && data[u] === true);
-                
-                const typingBar = document.getElementById('typingBar');
-                const typingText = document.getElementById('typingText');
-                
-                if (othersTyping.length > 0) {
-                    typingBar.classList.add('show');
-                    if (currentChatType === 'group') {
-                        typingText.textContent = othersTyping.join(', ') + ' sedang mengetik...';
-                    } else {
-                        typingText.textContent = 'sedang mengetik...';
-                    }
-                } else {
-                    typingBar.classList.remove('show');
-                }
-            });
-        }
-
-        function stopTyping() {
-            if (!currentChatId || !currentUser) return;
-            const typingRef = rtdb.ref('typing/' + currentChatId + '/' + currentUser.username);
-            typingRef.set(false);
-            if (typingTimeout) clearTimeout(typingTimeout);
-        }
+    });
+}
 
         // ==================== CAPTCHA ====================
         function generateCaptcha() {
@@ -2253,13 +1953,12 @@ p<!DOCTYPE html>
                 const email = username + '@mahichat.app';
                 await auth.createUserWithEmailAndPassword(email, password);
                 
-                await rtdb.ref('users/' + username).set({
+                await db.collection('users').doc(username).set({
                     username: username,
                     bio: '',
                     avatar: null,
                     isOwner: false,
-                    createdAt: Date.now(),
-                    status: 'online'
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 
                 showLoading(false);
@@ -2293,39 +1992,36 @@ p<!DOCTYPE html>
             showLoading(true);
 
             try {
+                // Check if admin login
                 if (username === ADMIN_USER && password === ADMIN_PASS) {
                     const adminEmail = ADMIN_USER + '@mahichat.app';
                     try {
                         await auth.signInWithEmailAndPassword(adminEmail, password);
                     } catch (authErr) {
-                        if (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential') {
+                        if (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential' || authErr.code === 'auth/invalid-login-credentials') {
                             await auth.createUserWithEmailAndPassword(adminEmail, password);
                         } else {
                             throw authErr;
                         }
                     }
-                    
-                    const adminSnap = await rtdb.ref('users/' + ADMIN_USER).once('value');
-                    if (!adminSnap.exists()) {
-                        await rtdb.ref('users/' + ADMIN_USER).set({
+                    const adminRef = db.collection('users').doc(ADMIN_USER);
+                    const adminDoc = await adminRef.get();
+                    if (!adminDoc.exists) {
+                        await adminRef.set({
                             username: ADMIN_USER,
                             bio: 'Owner MahiChat 👑',
                             avatar: null,
                             isOwner: true,
-                            createdAt: Date.now(),
-                            status: 'online'
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                     }
-                    
-                    const adminData = adminSnap.val() || {};
                     currentUser = {
                         username: ADMIN_USER,
-                        bio: adminData.bio || 'Owner MahiChat 👑',
-                        avatar: adminData.avatar || null,
+                        bio: adminDoc.exists ? (adminDoc.data().bio || 'Owner MahiChat 👑') : 'Owner MahiChat 👑',
+                        avatar: adminDoc.exists ? (adminDoc.data().avatar || null) : null,
                         isOwner: true
                     };
                     localStorage.setItem('mahichat_user', JSON.stringify(currentUser));
-                    setupPresence();
                     showLoading(false);
                     showMainScreen();
                     return;
@@ -2334,12 +2030,10 @@ p<!DOCTYPE html>
                 const email = username + '@mahichat.app';
                 await auth.signInWithEmailAndPassword(email, password);
                 
-                const userSnap = await rtdb.ref('users/' + username).once('value');
-                if (userSnap.exists()) {
-                    const ud = userSnap.val();
-                    currentUser = { ...ud, username };
+                const userDoc = await db.collection('users').doc(username).get();
+                if (userDoc.exists) {
+                    currentUser = { ...userDoc.data(), username };
                     localStorage.setItem('mahichat_user', JSON.stringify(currentUser));
-                    setupPresence();
                     showLoading(false);
                     showMainScreen();
                 }
@@ -2351,11 +2045,35 @@ p<!DOCTYPE html>
         });
 
         // ==================== MAIN SCREEN ====================
-                function showMainScreen() {
+        function showMainScreen() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('registerScreen').classList.add('hidden');
             document.getElementById('mainScreen').classList.add('active');
+            if (db && currentUser) db.collection('users').doc(currentUser.username).update({ online: true, lastSeen: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
             loadChats();
+        }
+
+        function loadChats() {
+            const chatList = document.getElementById('chatList');
+            const emptyChats = document.getElementById('emptyChats');
+            if (!db) return;
+            if (chatsUnsubscribe) { chatsUnsubscribe(); chatsUnsubscribe = null; }
+            chatsUnsubscribe = db.collection('chats')
+                .where('participants', 'array-contains', currentUser.username)
+                .where('type', '==', activeTab === 'chats' ? 'private' : 'group')
+                .orderBy('lastMessageTime', 'desc')
+                .onSnapshot(snapshot => {
+                    chatList.innerHTML = '';
+                    if (snapshot.empty) { emptyChats.style.display = 'flex'; return; }
+                    emptyChats.style.display = 'none';
+                    const docs = [];
+                    snapshot.forEach(doc => docs.push(doc));
+                    docs.sort((a, b) => ((b.data().pinned ? 1 : 0) - (a.data().pinned ? 1 : 0)));
+                    docs.forEach(doc => renderChatItem(doc.data(), doc.id));
+                }, err => {
+                    showToast('Gagal load chat: ' + err.code, 'error');
+                    console.error('loadChats:', err);
+                });
         }
 
         function switchTab(tab) {
@@ -2365,68 +2083,23 @@ p<!DOCTYPE html>
             
             const fab = document.getElementById('fabButton');
             fab.onclick = tab === 'chats' ? showNewChat : showCreateGroup;
-            fab.innerHTML = tab === 'chats' ? '<i class="fas fa-plus"></i>' : '<i class="fas fa-users"></i>';
             
             loadChats();
         }
 
-        function loadChats() {
-            const chatList = document.getElementById('chatList');
-            const emptyChats = document.getElementById('emptyChats');
-            
-            // Cleanup old listeners
-            chatListeners.forEach(l => l.off());
-            chatListeners = [];
-            
-            const chatsRef = rtdb.ref('chats');
-            const listener = chatsRef.on('value', (snapshot) => {
-                chatList.innerHTML = '';
-                const chats = [];
-                
-                snapshot.forEach((child) => {
-                    const chat = child.val();
-                    const chatId = child.key;
-                    
-                    if (chat.participants && chat.participants.includes(currentUser.username)) {
-                        if ((activeTab === 'chats' && chat.type === 'private') || 
-                            (activeTab === 'groups' && chat.type === 'group')) {
-                            chats.push({ ...chat, id: chatId });
-                        }
-                    }
-                });
-                
-                // Sort by lastMessageTime desc, pinned first
-                chats.sort((a, b) => {
-                    const ap = a.pinned ? 1 : 0;
-                    const bp = b.pinned ? 1 : 0;
-                    if (bp !== ap) return bp - ap;
-                    return (b.lastMessageTime || 0) - (a.lastMessageTime || 0);
-                });
-                
-                if (chats.length === 0) {
-                    emptyChats.style.display = 'flex';
-                    chatList.appendChild(emptyChats);
-                    return;
-                }
-                
-                emptyChats.style.display = 'none';
-                chats.forEach(chat => renderChatItem(chat, chat.id));
-            });
-            
-            chatListeners.push(listener);
-        }
+
 
         function renderChatItem(chat, chatId) {
             const chatList = document.getElementById('chatList');
             const isGroup = chat.type === 'group';
             const otherUser = isGroup ? null : chat.participants.find(p => p !== currentUser.username);
-            const isPinned = chat.pinned || false;
-
+            
             const item = document.createElement('div');
             item.className = 'chat-item';
-            if (isPinned) item.style.background = 'rgba(0,168,132,0.05)';
-
+            item.onclick = () => isGroup ? openGroupChat(chatId, chat) : openChat(chatId, otherUser);
+            
             let avatarHtml, name;
+            
             if (isGroup) {
                 avatarHtml = '<i class="fas fa-users" style="font-size:20px"></i>';
                 name = chat.name || 'Grup Tanpa Nama';
@@ -2434,115 +2107,46 @@ p<!DOCTYPE html>
                 avatarHtml = '👤';
                 name = otherUser || 'Unknown';
             }
-
+            
             const lastMsg = chat.lastMessage || 'Belum ada pesan';
-            const time = chat.lastMessageTime ? formatTime(new Date(chat.lastMessageTime)) : '';
-            const unread = (chat.unread && chat.unread[currentUser.username]) || 0;
-
-            item.innerHTML =
-                '<div class="chat-avatar" id="av-' + chatId + '">' + avatarHtml +
-                    (isGroup ? '<div class="group-icon"><i class="fas fa-users" style="font-size:8px"></i></div>' : '') +
-                '</div>' +
-                '<div class="chat-info">' +
-                    '<div class="chat-name-row">' +
-                        '<div class="chat-name">' + name + '</div>' +
-                        (isPinned ? '<i class="fas fa-thumbtack" style="color:var(--accent);font-size:11px;margin-left:4px;"></i>' : '') +
-                        (isGroup ? '<i class="fas fa-users group-check"></i>' : '') +
-                    '</div>' +
-                    '<div class="chat-preview" id="preview-' + chatId + '">' + escapeHtml(lastMsg) + '</div>' +
-                '</div>' +
-                '<div class="chat-meta">' +
-                    '<div class="chat-time">' + time + '</div>' +
-                    (unread > 0 ? '<div class="unread-badge">' + unread + '</div>' : '') +
-                '</div>';
-
-            item.addEventListener('click', () => isGroup ? openGroupChat(chatId, chat) : openChat(chatId, otherUser));
-
-            // Long press menu
-            let pressTimer;
-            item.addEventListener('touchstart', (e) => { 
-                pressTimer = setTimeout(() => showChatMenu(chatId, isPinned), 600); 
-            });
-            item.addEventListener('touchend', () => clearTimeout(pressTimer));
-            item.addEventListener('touchmove', () => clearTimeout(pressTimer));
-            item.addEventListener('contextmenu', e => { 
-                e.preventDefault(); 
-                showChatMenu(chatId, isPinned); 
-            });
-
+            const time = chat.lastMessageTime ? formatTime(chat.lastMessageTime.toDate()) : '';
+            const unread = chat.unread && chat.unread[currentUser.username] || 0;
+            
+            item.innerHTML = `
+                <div class="chat-avatar">
+                    ${avatarHtml}
+                    ${isGroup ? '<div class="group-icon"><i class="fas fa-users" style="font-size:8px"></i></div>' : ''}
+                </div>
+                <div class="chat-info">
+                    <div class="chat-name-row">
+                        <div class="chat-name">${name}</div>
+                        ${isGroup ? '<i class="fas fa-users group-check"></i>' : '<span class="badge-placeholder"></span>'}
+                    </div>
+                    <div class="chat-preview">${lastMsg}</div>
+                </div>
+                <div class="chat-meta">
+                    <div class="chat-time">${time}</div>
+                    ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ''}
+                </div>
+            `;
+            
             chatList.appendChild(item);
 
-            // Load avatar & status for private chats
+            // Fetch owner badge dari users collection (async, non-blocking)
             if (!isGroup && otherUser) {
-                rtdb.ref('users/' + otherUser).once('value').then(ud => {
-                    const user = ud.val();
-                    if (!user) return;
-                    
-                    if (user.isOwner) {
-                        const nameRow = item.querySelector('.chat-name-row');
-                        if (!nameRow.querySelector('.owner-check')) {
-                            nameRow.insertAdjacentHTML('beforeend', '<i class="fas fa-check-circle owner-check"></i>');
+                db.collection('users').doc(otherUser).get().then(userDoc => {
+                    if (userDoc.exists && userDoc.data().isOwner) {
+                        const placeholder = item.querySelector('.badge-placeholder');
+                        if (placeholder) {
+                            placeholder.outerHTML = '<i class="fas fa-check-circle owner-check"></i>';
+                        }
+                        // Update avatar kalau ada
+                        if (userDoc.data().avatar) {
+                            const avatarDiv = item.querySelector('.chat-avatar');
+                            if (avatarDiv) avatarDiv.innerHTML = `<img src="${userDoc.data().avatar}" onerror="this.parentNode.innerHTML='👤'">`;
                         }
                     }
-                    
-                    if (user.avatar) {
-                        const av = document.getElementById('av-' + chatId);
-                        if (av) av.innerHTML = '<img src="' + user.avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.parentNode.innerHTML=\'👤\'">';
-                    }
-                    
-                    // Show online status in preview
-                    if (user.status === 'online') {
-                        const preview = document.getElementById('preview-' + chatId);
-                        if (preview && !chat.lastMessage) {
-                            preview.innerHTML = '<span style="color:var(--accent);">● online</span>';
-                        }
-                    }
-                });
-            }
-        }
-
-        function showChatMenu(chatId, isPinned) {
-            const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:flex-end;';
-            overlay.innerHTML =
-                '<div style="background:var(--bg-secondary);width:100%;border-radius:16px 16px 0 0;padding:16px 16px 32px;">' +
-                    '<div style="font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">Opsi Chat</div>' +
-                    '<div class="menu-opt" id="mo-pin" style="padding:14px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;"><i class="fas fa-thumbtack"></i> ' + (isPinned ? 'Lepas Pin' : 'Pin Chat') + '</div>' +
-                    '<div class="menu-opt" id="mo-del" style="padding:14px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;color:#ef4444;margin-bottom:4px;"><i class="fas fa-trash"></i> Hapus Chat</div>' +
-                    '<div class="menu-opt" id="mo-cancel" style="padding:14px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--text-secondary);">Batal</div>' +
-                '</div>';
-            document.body.appendChild(overlay);
-            
-            overlay.querySelector('#mo-pin').onclick = () => { 
-                overlay.remove(); 
-                togglePinChat(chatId, isPinned); 
-            };
-            overlay.querySelector('#mo-del').onclick = () => { 
-                overlay.remove(); 
-                deleteChat(chatId); 
-            };
-            overlay.querySelector('#mo-cancel').onclick = () => overlay.remove();
-            overlay.addEventListener('click', e => { 
-                if (e.target === overlay) overlay.remove(); 
-            });
-        }
-
-        async function togglePinChat(chatId, isPinned) {
-            try {
-                await rtdb.ref('chats/' + chatId + '/pinned').set(!isPinned);
-                showToast(!isPinned ? 'Chat di-pin ✓' : 'Pin dilepas');
-            } catch(e) { 
-                showToast('Gagal: ' + e.message, 'error'); 
-            }
-        }
-
-        async function deleteChat(chatId) {
-            if (!confirm('Hapus chat ini? Semua pesan akan hilang.')) return;
-            try {
-                await rtdb.ref('chats/' + chatId).remove();
-                showToast('Chat dihapus');
-            } catch(e) { 
-                showToast('Gagal hapus: ' + e.message, 'error'); 
+                }).catch(() => {});
             }
         }
 
@@ -2560,404 +2164,250 @@ p<!DOCTYPE html>
             currentChatId = chatId;
             currentChatUser = username;
             currentChatType = 'private';
-
+            replyingTo = null;
+            cancelReply();
+            if (typingListenerUnsub) { typingListenerUnsub(); typingListenerUnsub = null; }
+            if (onlineListenerUnsub) { onlineListenerUnsub(); onlineListenerUnsub = null; }
             document.getElementById('mainScreen').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('chatRoom').classList.add('active');
-            
-            document.getElementById('roomName').innerHTML = username;
-            document.getElementById('roomStatus').textContent = 'memuat...';
+            document.getElementById('roomName').textContent = username;
+            document.getElementById('roomStatus').textContent = 'online';
             document.getElementById('roomGroupBadge').classList.add('hidden');
             document.getElementById('roomOwnerBadge').classList.add('hidden');
-
             loadMessages();
-            listenTyping();
-            markMessagesAsRead();
-
-            // Listen user status
-            if (presenceListener) presenceListener.off();
-            presenceListener = rtdb.ref('presence/' + username).on('value', (snap) => {
-                const data = snap.val();
-                const statusEl = document.getElementById('roomStatus');
-                if (data && data.state === 'online') {
-                    statusEl.textContent = 'online';
-                    statusEl.style.color = 'var(--accent)';
-                } else if (data && data.lastSeen) {
-                    const lastSeen = new Date(data.lastSeen);
-                    statusEl.textContent = 'terakhir dilihat ' + formatTime(lastSeen) + ' ' + formatDateShort(lastSeen);
-                    statusEl.style.color = 'var(--text-muted)';
-                } else {
-                    statusEl.textContent = 'offline';
-                    statusEl.style.color = 'var(--text-muted)';
-                }
-            });
-
-            // Check owner badge
-            rtdb.ref('users/' + username).once('value').then(ud => {
-                const user = ud.val();
-                if (user && user.isOwner) {
-                    document.getElementById('roomName').innerHTML = username + ' <i class="fas fa-check-circle owner-check"></i>';
-                }
-                if (user && user.avatar) {
-                    document.getElementById('roomAvatar').innerHTML = '<img src="' + user.avatar + '" style="width:100%;height:100%;object-fit:cover;">';
-                } else {
-                    document.getElementById('roomAvatar').textContent = '👤';
-                }
-            });
+            onlineListenerUnsub = db.collection('users').doc(username).onSnapshot(ud => {
+                if (!ud.exists) return;
+                const d = ud.data();
+                document.getElementById('roomName').innerHTML = username + (d.isOwner ? ' <i class="fas fa-check-circle owner-check"></i>' : '');
+                const st = document.getElementById('roomStatus');
+                if (d.online) { st.innerHTML = '<span class="online-dot"></span>Online'; }
+                else if (d.lastSeen) { const m = Math.floor((Date.now() - d.lastSeen.toDate()) / 60000); st.textContent = m < 1 ? 'Baru saja' : m < 60 ? m + ' menit lalu' : 'Offline'; }
+                else st.textContent = 'Offline';
+            }, () => {});
+            typingListenerUnsub = db.collection('chats').doc(chatId).onSnapshot(snap => {
+                if (!snap.exists) return;
+                const typing = snap.data().typing || {};
+                const now = Date.now();
+                const active = Object.keys(typing).filter(u => u !== currentUser.username && typing[u] && (now - typing[u].toDate().getTime()) < 4000);
+                const ind = document.getElementById('typingIndicator');
+                if (active.length > 0) { document.getElementById('typingText').textContent = active.join(', ') + ' mengetik...'; ind.style.display = 'flex'; }
+                else ind.style.display = 'none';
+            }, () => {});
         }
 
         async function openGroupChat(chatId, chatData) {
             currentChatId = chatId;
             currentChatType = 'group';
             
-            document.getElementById('roomName').innerHTML = (chatData.name || 'Grup') + ' <i class="fas fa-users group-check"></i>';
-            document.getElementById('roomStatus').textContent = (chatData.participants ? chatData.participants.length : 0) + ' anggota';
+            document.getElementById('roomName').innerHTML = `
+                ${chatData.name || 'Grup'}
+                <i class="fas fa-users group-check"></i>
+            `;
+            document.getElementById('roomStatus').textContent = chatData.participants.length + ' anggota';
             document.getElementById('roomOwnerBadge').classList.add('hidden');
-            document.getElementById('roomAvatar').innerHTML = '<i class="fas fa-users" style="font-size:20px"></i>';
             
             document.getElementById('mainScreen').classList.remove('active');
             document.getElementById('chatRoom').classList.add('active');
             
             loadMessages();
-            listenTyping();
-            markMessagesAsRead();
         }
 
         function backToMain() {
-            // Cleanup listeners
-            messageListeners.forEach(l => l.off());
-            messageListeners = [];
-            if (typingListener) { typingListener.off(); typingListener = null; }
-            if (presenceListener) { presenceListener.off(); presenceListener = null; }
-            
-            stopTyping();
-            
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+            if (typingListenerUnsub) { typingListenerUnsub(); typingListenerUnsub = null; }
+            if (onlineListenerUnsub) { onlineListenerUnsub(); onlineListenerUnsub = null; }
+            if (db && currentChatId && currentUser) { const u = {}; u['typing.'+currentUser.username] = firebase.firestore.FieldValue.delete(); db.collection('chats').doc(currentChatId).update(u).catch(() => {}); }
+            cancelReply();
+            replyingTo = null;
             currentChatId = null;
             currentChatUser = null;
             currentChatType = 'private';
-            replyingTo = null;
-            cancelReply();
-            
             document.getElementById('chatRoom').classList.remove('active');
             document.getElementById('findUserScreen').classList.remove('active');
             document.getElementById('createGroupScreen').classList.remove('active');
             document.getElementById('mainScreen').classList.add('active');
             document.getElementById('attachMenu').classList.remove('show');
             document.getElementById('stickerPanel').classList.remove('show');
-            
-            loadChats();
+            document.getElementById('typingIndicator').style.display = 'none';
         }
 
         function loadMessages() {
             const container = document.getElementById('messagesContainer');
             container.innerHTML = '';
             let lastDate = null;
-            const renderedIds = new Set();
-
-            if (!currentChatId) return;
-            
-            // Cleanup old message listeners
-            messageListeners.forEach(l => l.off());
-            messageListeners = [];
-
-            const messagesRef = rtdb.ref('chats/' + currentChatId + '/messages');
-            
-            const listener = messagesRef.on('value', (snapshot) => {
-                // Only append new messages, don't clear everything
-                snapshot.forEach((child) => {
-                    const msgId = child.key;
-                    if (renderedIds.has(msgId)) return;
-                    renderedIds.add(msgId);
-                    
-                    const msg = child.val();
-                    try {
-                        const msgDate = msg.timestamp ? new Date(msg.timestamp).toDateString() : '';
-                        if (msgDate && msgDate !== lastDate) {
-                            const sep = document.createElement('div');
-                            sep.className = 'date-separator';
-                            sep.innerHTML = '<span>' + formatDate(new Date(msg.timestamp)) + '</span>';
-                            container.appendChild(sep);
-                            lastDate = msgDate;
-                        }
-                        appendMessage(msg, msgId);
-                    } catch(e) {
-                        console.error('renderMsg error:', e, msg);
+            const rendered = new Set();
+            if (!db || !currentChatId) return;
+            if (messagesUnsubscribe) { messagesUnsubscribe(); messagesUnsubscribe = null; }
+            function renderMsg(msg, id) {
+                if (rendered.has(id)) return;
+                rendered.add(id);
+                try {
+                    const d = msg.timestamp ? msg.timestamp.toDate().toDateString() : '';
+                    if (d && d !== lastDate) {
+                        const sep = document.createElement('div');
+                        sep.className = 'date-separator';
+                        sep.innerHTML = '<span>' + formatDate(msg.timestamp.toDate()) + '</span>';
+                        container.appendChild(sep);
+                        lastDate = d;
                     }
-                });
-                
+                    appendMessage(msg, id);
+                } catch(e) { console.error('renderMsg:', e); }
+            }
+            const ref = db.collection('chats').doc(currentChatId).collection('messages').orderBy('timestamp', 'asc');
+            ref.get().then(snap => {
+                snap.forEach(doc => renderMsg(doc.data(), doc.id));
                 scrollToBottom();
-                
-                // Mark as read after loading
-                setTimeout(markMessagesAsRead, 500);
-            });
-            
-            messageListeners.push(listener);
+                const u = {}; u['unread.'+currentUser.username] = 0;
+                db.collection('chats').doc(currentChatId).update(u).catch(() => {});
+                messagesUnsubscribe = ref.onSnapshot(snap2 => {
+                    snap2.docChanges().forEach(ch => {
+                        if (ch.type === 'added') renderMsg(ch.data(), ch.id);
+                        if (ch.type === 'modified') {
+                            const el = container.querySelector('[data-msgid="' + ch.id + '"]');
+                            if (el) updateReactionsEl(el, ch.data(), ch.id);
+                        }
+                    });
+                    scrollToBottom();
+                }, err => { showToast('Error: ' + err.code + ' - ' + err.message, 'error'); });
+            }).catch(err => { showToast('Gagal load pesan: ' + err.code + ' - ' + err.message, 'error'); });
         }
 
-        function appendMessage(msg, msgId) {
+        function appendMessage(msg, docId) {
             const container = document.getElementById('messagesContainer');
             const isOwn = msg.sender === currentUser.username;
             const wrapper = document.createElement('div');
             wrapper.className = 'message-wrapper ' + (isOwn ? 'own' : '');
-            wrapper.setAttribute('data-msgid', msgId);
-            
-            // Long press for context menu
-            let pressTimer;
-            wrapper.addEventListener('touchstart', (e) => { 
-                pressTimer = setTimeout(() => showMessageContext(msgId, msg, e), 500); 
-            });
-            wrapper.addEventListener('touchend', () => clearTimeout(pressTimer));
-            wrapper.addEventListener('touchmove', () => clearTimeout(pressTimer));
-            wrapper.addEventListener('contextmenu', e => { 
-                e.preventDefault(); 
-                showMessageContext(msgId, msg, e); 
-            });
-            
-            let content = '';
-            
-            // Reply preview
-            if (msg.replyTo) {
-                content += `
-                    <div class="message-reply" onclick="scrollToMessage('${msg.replyTo.id}')">
-                        <div class="message-reply-sender">${escapeHtml(msg.replyTo.sender)}</div>
-                        <div class="message-reply-text">${escapeHtml(msg.replyTo.text || '...')}</div>
-                    </div>
-                `;
-            }
-            
-            if (msg.type === 'text') {
-                content += `<div class="message-text">${escapeHtml(msg.text)}</div>`;
-            } else if (msg.type === 'image') {
-                content += `<img src="${msg.url}" class="message-image" onclick="window.open('${msg.url}')">`;
-            } else if (msg.type === 'sticker') {
-                content += `<div class="message-sticker">${msg.sticker}</div>`;
-            } else if (msg.type === 'custom_sticker') {
-                content += `<img src="${msg.url}" class="message-custom-sticker" onclick="window.open('${msg.url}')">`;
-            } else if (msg.type === 'file') {
-                content += `
-                    <a href="${msg.url}" class="message-file" download="${msg.fileName}">
-                        <i class="fas fa-file"></i>
-                        <div class="message-file-info">
-                            <div class="message-file-name">${msg.fileName}</div>
-                            <div class="message-file-size">${msg.fileSize || 'File'}</div>
-                        </div>
-                    </a>
-                `;
-            }
-            
-            const senderName = currentChatType === 'group' && !isOwn ? 
-                `<div class="message-sender">${msg.sender}</div>` : '';
-            
-            // Read receipt
-            let statusIcon = '';
-            if (isOwn) {
-                const isRead = msg.readBy && msg.readBy[currentChatUser || ''];
-                statusIcon = `<i class="fas fa-check-double message-status ${isRead ? 'read' : ''}"></i>`;
-            }
-            
-            // Reactions
-            let reactionsHtml = '';
-            if (msg.reactions) {
-                reactionsHtml = '<div class="message-reactions">';
-                Object.entries(msg.reactions).forEach(([emoji, users]) => {
-                    const count = Object.keys(users).length;
-                    const isOwnReaction = users[currentUser.username];
-                    reactionsHtml += `
-                        <div class="reaction-badge ${isOwnReaction ? 'own-reaction' : ''}" onclick="toggleReaction('${msgId}', '${emoji}')">
-                            ${emoji} <span class="reaction-count">${count}</span>
-                        </div>
-                    `;
-                });
-                reactionsHtml += '</div>';
-            }
-            
-            wrapper.innerHTML = `
-                <div class="message-bubble">
-                    ${senderName}
-                    ${content}
-                    ${reactionsHtml}
-                    <div class="message-time">
-                        ${msg.timestamp ? formatTime(new Date(msg.timestamp)) : ''}
-                        ${statusIcon}
-                    </div>
-                </div>
-            `;
-            
+            if (docId) wrapper.setAttribute('data-msgid', docId);
+            let contentHtml = '';
+            if (msg.type === 'text') contentHtml = '<div class="message-text">' + escapeHtml(msg.text) + '</div>';
+            else if (msg.type === 'image') contentHtml = '<img src="' + msg.url + '" class="message-image" onclick="window.open(\'' + msg.url + '\')">';
+            else if (msg.type === 'sticker') contentHtml = '<div class="message-sticker">' + msg.sticker + '</div>';
+            else if (msg.type === 'custom_sticker') contentHtml = '<img src="' + msg.url + '" class="message-custom-sticker">';
+            else if (msg.type === 'file') contentHtml = '<a href="' + msg.url + '" class="message-file" download="' + msg.fileName + '"><i class="fas fa-file"></i><div class="message-file-info"><div class="message-file-name">' + msg.fileName + '</div><div class="message-file-size">' + (msg.fileSize || 'File') + '</div></div></a>';
+            const senderName = currentChatType === 'group' && !isOwn ? '<div class="message-sender">' + msg.sender + '</div>' : '';
+            const statusIcon = isOwn ? '<i class="fas fa-check-double message-status' + (msg.read ? ' read' : '') + '"></i>' : '';
+            const replyHtml = msg.replyTo ? '<div class="reply-quote"><div class="reply-quote-sender">' + escapeHtml(msg.replyTo.sender) + '</div><div class="reply-quote-text">' + escapeHtml(msg.replyTo.text || '') + '</div></div>' : '';
+            const reactHtml = buildReactionsHtml(msg.reactions || {}, docId);
+            const timeStr = msg.timestamp ? formatTime(msg.timestamp.toDate()) : '';
+            wrapper.innerHTML = '<div class="message-bubble">' + senderName + replyHtml + contentHtml +
+                '<div class="message-time">' + timeStr + statusIcon + '</div>' +
+                (reactHtml ? '<div class="msg-reactions">' + reactHtml + '</div>' : '') + '</div>';
+            let pt;
+            wrapper.addEventListener('touchstart', () => { pt = setTimeout(() => showMsgMenu(msg, docId), 600); });
+            wrapper.addEventListener('touchend', () => clearTimeout(pt));
+            wrapper.addEventListener('touchmove', () => clearTimeout(pt));
+            wrapper.addEventListener('contextmenu', e => { e.preventDefault(); showMsgMenu(msg, docId); });
             container.appendChild(wrapper);
         }
 
-        function scrollToMessage(msgId) {
-            const el = document.querySelector(`[data-msgid="${msgId}"]`);
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.querySelector('.message-bubble').style.animation = 'pulse 0.5s ease';
-                setTimeout(() => {
-                    el.querySelector('.message-bubble').style.animation = '';
-                }, 500);
-            }
+        function buildReactionsHtml(reactions, docId) {
+            if (!reactions || !Object.keys(reactions).length) return '';
+            return Object.entries(reactions).map(([emoji, users]) => {
+                if (!users || !users.length) return '';
+                const isOwn2 = users.includes(currentUser.username);
+                return '<span class="reaction-pill' + (isOwn2 ? ' own-reaction' : '') + '" onclick="toggleReaction(\'' + docId + '\',\'' + emoji + '\')">' + emoji + ' <span class="reaction-count">' + users.length + '</span></span>';
+            }).join('');
         }
 
-        // ==================== MESSAGE CONTEXT MENU ====================
-        function showMessageContext(msgId, msg, e) {
-            selectedMessageId = msgId;
-            const menu = document.getElementById('messageContextMenu');
-            
-            let x, y;
-            if (e.touches && e.touches[0]) {
-                x = e.touches[0].clientX;
-                y = e.touches[0].clientY;
-            } else if (e.clientX) {
-                x = e.clientX;
-                y = e.clientY;
-            } else {
-                x = window.innerWidth / 2;
-                y = window.innerHeight / 2;
-            }
-            
-            menu.style.left = Math.min(x, window.innerWidth - 170) + 'px';
-            menu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
-            menu.classList.add('show');
+        function updateReactionsEl(wrapperEl, msg, docId) {
+            const bubble = wrapperEl.querySelector('.message-bubble');
+            if (!bubble) return;
+            let reDiv = bubble.querySelector('.msg-reactions');
+            const html = buildReactionsHtml(msg.reactions || {}, docId);
+            if (html) { if (!reDiv) { reDiv = document.createElement('div'); reDiv.className = 'msg-reactions'; bubble.appendChild(reDiv); } reDiv.innerHTML = html; }
+            else if (reDiv) reDiv.remove();
         }
 
-        function hideContextMenu() {
-            document.getElementById('messageContextMenu').classList.remove('show');
-            selectedMessageId = null;
+        function showMsgMenu(msg, docId) {
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:flex-end;';
+            const emojis = ['👍','❤️','😂','😮','😢','🔥'];
+            ov.innerHTML = '<div style="background:var(--bg-secondary);width:100%;border-radius:16px 16px 0 0;padding:16px 16px 32px;">' +
+                '<div style="display:flex;gap:8px;justify-content:center;padding:12px 0 16px;border-bottom:1px solid var(--border);margin-bottom:8px;">' +
+                emojis.map(e => '<span style="font-size:26px;cursor:pointer;padding:6px;" data-e="' + e + '">' + e + '</span>').join('') + '</div>' +
+                '<div class="menu-opt" id="mo-rep"><i class="fas fa-reply"></i> Balas</div>' +
+                '<div class="menu-opt" id="mo-copy"><i class="fas fa-copy"></i> Salin</div>' +
+                (msg.sender === currentUser.username ? '<div class="menu-opt" id="mo-del" style="color:#ef4444;"><i class="fas fa-trash"></i> Hapus Pesan</div>' : '') +
+                '<div class="menu-opt" id="mo-x">Batal</div></div>';
+            document.body.appendChild(ov);
+            ov.querySelectorAll('[data-e]').forEach(el => { el.onclick = () => { ov.remove(); toggleReaction(docId, el.dataset.e); }; });
+            ov.querySelector('#mo-rep').onclick = () => { ov.remove(); setReplyTo(msg); };
+            ov.querySelector('#mo-copy').onclick = () => { ov.remove(); navigator.clipboard && navigator.clipboard.writeText(msg.text || '').then(() => showToast('Disalin', 'success')); };
+            const d = ov.querySelector('#mo-del'); if (d) d.onclick = () => { ov.remove(); deleteMessage(docId); };
+            ov.querySelector('#mo-x').onclick = () => ov.remove();
+            ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
         }
 
-        function replyToMessage() {
-            if (!selectedMessageId) return;
-            
-            const msgRef = rtdb.ref('chats/' + currentChatId + '/messages/' + selectedMessageId);
-            msgRef.once('value').then(snap => {
-                const msg = snap.val();
-                if (!msg) return;
-                
-                replyingTo = {
-                    id: selectedMessageId,
-                    sender: msg.sender,
-                    text: msg.text || (msg.type === 'image' ? '📷 Foto' : msg.type === 'sticker' ? '🎭 Sticker' : '...'),
-                    type: msg.type
-                };
-                
-                document.getElementById('replyPreviewText').textContent = msg.sender + ': ' + replyingTo.text;
-                document.getElementById('replyPreview').classList.add('show');
-                document.getElementById('messageInput').focus();
-            });
-            
-            hideContextMenu();
+        async function toggleReaction(docId, emoji) {
+            if (!docId || !currentChatId) return;
+            const ref = db.collection('chats').doc(currentChatId).collection('messages').doc(docId);
+            try {
+                const doc = await ref.get();
+                const reactions = (doc.exists && doc.data().reactions) || {};
+                const users = reactions[emoji] || [];
+                const idx = users.indexOf(currentUser.username);
+                if (idx >= 0) users.splice(idx, 1); else users.push(currentUser.username);
+                reactions[emoji] = users;
+                await ref.update({ reactions });
+            } catch(e) { console.error('reaction:', e); }
+        }
+
+        async function deleteMessage(docId) {
+            if (!confirm('Hapus pesan ini?')) return;
+            try {
+                await db.collection('chats').doc(currentChatId).collection('messages').doc(docId).delete();
+                const el = document.querySelector('[data-msgid="' + docId + '"]');
+                if (el) el.remove();
+                showToast('Pesan dihapus', 'success');
+            } catch(e) { showToast('Gagal: ' + e.message, 'error'); }
+        }
+
+        function setReplyTo(msg) {
+            replyingTo = msg;
+            document.getElementById('replyBarSender').textContent = msg.sender;
+            document.getElementById('replyBarText').textContent = msg.text || '(media)';
+            document.getElementById('replyBar').classList.add('show');
+            document.getElementById('messageInput').focus();
         }
 
         function cancelReply() {
             replyingTo = null;
-            document.getElementById('replyPreview').classList.remove('show');
+            const bar = document.getElementById('replyBar');
+            if (bar) bar.classList.remove('show');
         }
 
-        function showReactionPicker() {
-            hideContextMenu();
-            const menu = document.getElementById('messageContextMenu');
-            const rect = menu.getBoundingClientRect();
-            
-            const picker = document.getElementById('reactionPicker');
-            picker.style.left = rect.left + 'px';
-            picker.style.top = (rect.top - 50) + 'px';
-            picker.classList.add('show');
+        function onTyping() {
+            if (!db || !currentChatId || !currentUser) return;
+            const u = {}; u['typing.'+currentUser.username] = firebase.firestore.FieldValue.serverTimestamp();
+            db.collection('chats').doc(currentChatId).update(u).catch(() => {});
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                const c = {}; c['typing.'+currentUser.username] = firebase.firestore.FieldValue.delete();
+                db.collection('chats').doc(currentChatId).update(c).catch(() => {});
+            }, 3000);
         }
 
-        function hideReactionPicker() {
-            document.getElementById('reactionPicker').classList.remove('show');
-        }
-
-        async function addReaction(emoji) {
-            if (!selectedMessageId || !currentChatId) return;
-            
-            const reactionRef = rtdb.ref('chats/' + currentChatId + '/messages/' + selectedMessageId + '/reactions/' + emoji + '/' + currentUser.username);
-            const snap = await reactionRef.once('value');
-            
-            if (snap.exists()) {
-                await reactionRef.remove();
-            } else {
-                await reactionRef.set(true);
-            }
-            
-            hideReactionPicker();
-            selectedMessageId = null;
-        }
-
-        async function toggleReaction(msgId, emoji) {
-            const reactionRef = rtdb.ref('chats/' + currentChatId + '/messages/' + msgId + '/reactions/' + emoji + '/' + currentUser.username);
-            const snap = await reactionRef.once('value');
-            
-            if (snap.exists()) {
-                await reactionRef.remove();
-            } else {
-                await reactionRef.set(true);
-            }
-        }
-
-        async function deleteMessage() {
-            if (!selectedMessageId) return;
-            if (!confirm('Hapus pesan ini?')) return;
-            
-            try {
-                await rtdb.ref('chats/' + currentChatId + '/messages/' + selectedMessageId).remove();
-                showToast('Pesan dihapus');
-            } catch(e) {
-                showToast('Gagal menghapus', 'error');
-            }
-            hideContextMenu();
-        }
-
-        // ==================== SEND MESSAGE ====================
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
-            
             if (!text || !currentChatId) return;
-            
             input.value = '';
             input.style.height = 'auto';
-            stopTyping();
-            
-            const msgData = {
-                sender: currentUser.username,
-                text: text,
-                type: 'text',
-                timestamp: Date.now(),
-                readBy: {}
-            };
-            
-            // Add reply info
-            if (replyingTo) {
-                msgData.replyTo = replyingTo;
-                cancelReply();
-            }
-            
+            const msgData = { sender: currentUser.username, text, type: 'text', timestamp: firebase.firestore.FieldValue.serverTimestamp(), read: false, reactions: {} };
+            if (replyingTo) { msgData.replyTo = { sender: replyingTo.sender, text: replyingTo.text || '' }; cancelReply(); }
+            clearTimeout(typingTimeout);
+            const c = {}; c['typing.'+currentUser.username] = firebase.firestore.FieldValue.delete();
+            db.collection('chats').doc(currentChatId).update(c).catch(() => {});
             try {
-                const newMsgRef = rtdb.ref('chats/' + currentChatId + '/messages').push();
-                await newMsgRef.set(msgData);
-                
-                const updateData = {
-                    lastMessage: text,
-                    lastMessageTime: Date.now()
-                };
-                
-                if (currentChatUser) {
-                    updateData['unread/' + currentChatUser] = firebase.database.ServerValue.increment(1);
-                } else if (currentChatType === 'group') {
-                    // For groups, increment unread for all except sender
-                    const chatSnap = await rtdb.ref('chats/' + currentChatId + '/participants').once('value');
-                    const participants = chatSnap.val() || [];
-                    participants.forEach(p => {
-                        if (p !== currentUser.username) {
-                            updateData['unread/' + p] = firebase.database.ServerValue.increment(1);
-                        }
-                    });
-                }
-                
-                await rtdb.ref('chats/' + currentChatId).update(updateData);
+                await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+                const upd = { lastMessage: text, lastMessageTime: firebase.firestore.FieldValue.serverTimestamp() };
+                if (currentChatUser) upd['unread.'+currentChatUser] = firebase.firestore.FieldValue.increment(1);
+                await db.collection('chats').doc(currentChatId).update(upd);
             } catch (err) {
-                showToast('Gagal kirim: ' + err.message, 'error');
+                showToast('Gagal kirim: ' + err.code + ' - ' + err.message, 'error');
                 input.value = text;
+                console.error('sendMessage:', err.code, err.message, 'chatId:', currentChatId);
             }
         }
 
@@ -2966,29 +2416,6 @@ p<!DOCTYPE html>
                 e.preventDefault();
                 sendMessage();
             }
-        }
-
-        // ==================== READ RECEIPT ====================
-        async function markMessagesAsRead() {
-            if (!currentChatId || !currentUser) return;
-            
-            const messagesRef = rtdb.ref('chats/' + currentChatId + '/messages');
-            const snap = await messagesRef.once('value');
-            
-            const updates = {};
-            snap.forEach(child => {
-                const msg = child.val();
-                if (msg.sender !== currentUser.username && msg.readBy && !msg.readBy[currentUser.username]) {
-                    updates[child.key + '/readBy/' + currentUser.username] = true;
-                }
-            });
-            
-            if (Object.keys(updates).length > 0) {
-                await messagesRef.update(updates);
-            }
-            
-            // Reset unread counter for current user
-            await rtdb.ref('chats/' + currentChatId + '/unread/' + currentUser.username).set(0);
         }
 
         function scrollToBottom() {
@@ -3029,6 +2456,7 @@ p<!DOCTYPE html>
                 return false;
             }
             
+            // Check magic numbers (first bytes)
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onloadend = function(e) {
@@ -3038,6 +2466,9 @@ p<!DOCTYPE html>
                         header += arr[i].toString(16);
                     }
                     
+                    // JPEG: ff d8 ff
+                    // PNG: 89 50 4e 47
+                    // WEBP: 52 49 46 46
                     const isJPEG = header.startsWith('ffd8');
                     const isPNG = header.startsWith('89504e47');
                     const isWEBP = header.startsWith('52494646');
@@ -3054,39 +2485,39 @@ p<!DOCTYPE html>
         }
 
         async function handleImageSelect(e) {
-            const file = e.target.files[0];
-            if (!file || !currentChatId) return;
-            
-            const isValid = await validateImageFile(file);
-            if (!isValid) return;
-            
-            showLoading(true);
-            
-            try {
-                const url = await uploadToImgBB(file);
-                
-                const msgData = {
-                    sender: currentUser.username,
-                    type: 'image',
-                    url: url,
-                    timestamp: Date.now(),
-                    readBy: {}
-                };
-                
-                const newMsgRef = rtdb.ref('chats/' + currentChatId + '/messages').push();
-                await newMsgRef.set(msgData);
-                
-                await rtdb.ref('chats/' + currentChatId).update({
-                    lastMessage: '📷 Foto',
-                    lastMessageTime: Date.now()
-                });
-                
-                showLoading(false);
-            } catch (err) {
-                showLoading(false);
-                showToast('Gagal mengirim foto', 'error');
-            }
-        }
+    const file = e.target.files[0];
+    if (!file || !currentChatId) return;
+    
+    const isValid = await validateImageFile(file);
+    if (!isValid) return;
+    
+    showLoading(true);
+    
+    try {
+        const url = await uploadToImgBB(file);
+        
+        const msgData = {
+            sender: currentUser.username,
+            type: 'image',
+            url: url,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            read: false
+        };
+        
+        await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+        await db.collection('chats').doc(currentChatId).update({
+            lastMessage: '📷 Foto',
+            lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+            [`unread.${currentChatUser}`]: firebase.firestore.FieldValue.increment(1)
+        });
+        
+        showLoading(false);
+    } catch (err) {
+        showLoading(false);
+        showToast('Gagal mengirim foto', 'error');
+        console.error(err);
+    }
+}
 
         async function handleFileSelect(e) {
             const file = e.target.files[0];
@@ -3095,7 +2526,7 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const storageRef = storage.ref('files/' + currentChatId + '/' + Date.now() + '_' + file.name);
+                const storageRef = storage.ref(`files/${currentChatId}/${Date.now()}_${file.name}`);
                 await storageRef.put(file);
                 const url = await storageRef.getDownloadURL();
                 
@@ -3105,22 +2536,22 @@ p<!DOCTYPE html>
                     fileName: file.name,
                     fileSize: formatFileSize(file.size),
                     url: url,
-                    timestamp: Date.now(),
-                    readBy: {}
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
                 };
                 
-                const newMsgRef = rtdb.ref('chats/' + currentChatId + '/messages').push();
-                await newMsgRef.set(msgData);
-                
-                await rtdb.ref('chats/' + currentChatId).update({
+                await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+                await db.collection('chats').doc(currentChatId).update({
                     lastMessage: '📎 ' + file.name,
-                    lastMessageTime: Date.now()
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                    [`unread.${currentChatUser}`]: firebase.firestore.FieldValue.increment(1)
                 });
                 
                 showLoading(false);
             } catch (err) {
                 showLoading(false);
                 showToast('Gagal mengirim file', 'error');
+                console.error(err);
             }
         }
 
@@ -3151,6 +2582,7 @@ p<!DOCTYPE html>
             const grid = document.getElementById('customStickerGrid');
             grid.innerHTML = '';
             
+            // Add "Create New" button
             const addNew = document.createElement('div');
             addNew.className = 'custom-sticker-item';
             addNew.innerHTML = `
@@ -3162,7 +2594,8 @@ p<!DOCTYPE html>
             addNew.onclick = createCustomSticker;
             grid.appendChild(addNew);
             
-            customStickers.forEach((url) => {
+            // Render saved custom stickers
+            customStickers.forEach((url, index) => {
                 const div = document.createElement('div');
                 div.className = 'custom-sticker-item';
                 div.innerHTML = `<img src="${url}" alt="sticker">`;
@@ -3177,28 +2610,29 @@ p<!DOCTYPE html>
         }
 
         async function handleStickerCreate(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const isValid = await validateImageFile(file);
-            if (!isValid) return;
-            
-            showLoading(true);
-            
-            try {
-                const url = await uploadToImgBB(file);
-                
-                customStickers.push(url);
-                localStorage.setItem('mahichat_stickers', JSON.stringify(customStickers));
-                
-                showLoading(false);
-                showToast('Sticker berhasil dibuat!');
-                renderCustomStickers();
-            } catch (err) {
-                showLoading(false);
-                showToast('Gagal membuat sticker', 'error');
-            }
-        }
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const isValid = await validateImageFile(file);
+    if (!isValid) return;
+    
+    showLoading(true);
+    
+    try {
+        const url = await uploadToImgBB(file);
+        
+        customStickers.push(url);
+        localStorage.setItem('mahichat_stickers', JSON.stringify(customStickers));
+        
+        showLoading(false);
+        showToast('Sticker berhasil dibuat!');
+        renderCustomStickers();
+    } catch (err) {
+        showLoading(false);
+        showToast('Gagal membuat sticker', 'error');
+        console.error(err);
+    }
+}
 
         async function sendSticker(emoji) {
             if (!currentChatId) return;
@@ -3207,16 +2641,15 @@ p<!DOCTYPE html>
                 sender: currentUser.username,
                 type: 'sticker',
                 sticker: emoji,
-                timestamp: Date.now(),
-                readBy: {}
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                read: false
             };
             
-            const newMsgRef = rtdb.ref('chats/' + currentChatId + '/messages').push();
-            await newMsgRef.set(msgData);
-            
-            await rtdb.ref('chats/' + currentChatId).update({
+            await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+            await db.collection('chats').doc(currentChatId).update({
                 lastMessage: '🎭 Sticker',
-                lastMessageTime: Date.now()
+                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                [`unread.${currentChatUser}`]: firebase.firestore.FieldValue.increment(1)
             });
             
             document.getElementById('stickerPanel').classList.remove('show');
@@ -3229,16 +2662,15 @@ p<!DOCTYPE html>
                 sender: currentUser.username,
                 type: 'custom_sticker',
                 url: url,
-                timestamp: Date.now(),
-                readBy: {}
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                read: false
             };
             
-            const newMsgRef = rtdb.ref('chats/' + currentChatId + '/messages').push();
-            await newMsgRef.set(msgData);
-            
-            await rtdb.ref('chats/' + currentChatId).update({
+            await db.collection('chats').doc(currentChatId).collection('messages').add(msgData);
+            await db.collection('chats').doc(currentChatId).update({
                 lastMessage: '🎭 Sticker',
-                lastMessageTime: Date.now()
+                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                [`unread.${currentChatUser}`]: firebase.firestore.FieldValue.increment(1)
             });
             
             document.getElementById('stickerPanel').classList.remove('show');
@@ -3274,9 +2706,9 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const userSnap = await rtdb.ref('users/' + username).once('value');
+                const userDoc = await db.collection('users').doc(username).get();
                 
-                if (!userSnap.exists()) {
+                if (!userDoc.exists) {
                     body.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-user-slash"></i>
@@ -3287,16 +2719,12 @@ p<!DOCTYPE html>
                     return;
                 }
                 
-                const user = userSnap.val();
+                const user = userDoc.data();
                 searchedUser = { ...user, username };
                 
                 const avatarHtml = user.avatar 
                     ? `<img src="${user.avatar}" alt="">` 
                     : '👤';
-                
-                const statusText = user.status === 'online' 
-                    ? '<span style="color:var(--accent);font-size:12px;">● online</span>' 
-                    : '<span style="color:var(--text-muted);font-size:12px;">● offline</span>';
                 
                 body.innerHTML = `
                     <div class="user-card">
@@ -3305,7 +2733,6 @@ p<!DOCTYPE html>
                             ${user.username}
                             ${user.isOwner ? '<i class="fas fa-check-circle owner-check"></i>' : ''}
                         </div>
-                        <div style="margin-bottom:8px;">${statusText}</div>
                         <div class="user-card-bio">${user.bio || 'Tidak ada bio'}</div>
                         <button class="btn-chat" onclick="startChat('${user.username}')">Mulai Chat</button>
                     </div>
@@ -3315,35 +2742,37 @@ p<!DOCTYPE html>
             } catch (err) {
                 showLoading(false);
                 showToast('Gagal mencari user', 'error');
+                console.error(err);
             }
         }
 
         async function startChat(username) {
-            showLoading(true);
-            try {
-                const chatId = [currentUser.username, username].sort().join('_');
-                const chatRef = rtdb.ref('chats/' + chatId);
-                const chatSnap = await chatRef.once('value');
-                
-                if (!chatSnap.exists()) {
-                    await chatRef.set({
-                        type: 'private',
-                        participants: [currentUser.username, username],
-                        createdAt: Date.now(),
-                        lastMessage: '',
-                        lastMessageTime: Date.now(),
-                        unread: {}
-                    });
-                }
-                
-                showLoading(false);
-                document.getElementById('findUserScreen').classList.remove('active');
-                openChat(chatId, username);
-            } catch (err) {
-                showLoading(false);
-                showToast('Gagal memulai chat: ' + err.message, 'error');
-            }
+    showLoading(true);
+    try {
+        const chatId = [currentUser.username, username].sort().join('_');
+        const chatRef = db.collection('chats').doc(chatId);
+        const chatDoc = await chatRef.get();
+        
+        if (!chatDoc.exists) {
+            await chatRef.set({
+                type: 'private',
+                participants: [currentUser.username, username],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastMessage: '',
+                lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
+                unread: {}
+            });
         }
+        
+        showLoading(false);
+        document.getElementById('findUserScreen').classList.remove('active');
+        openChat(chatId, username);
+    } catch (err) {
+        showLoading(false);
+        showToast('Gagal memulai chat: ' + err.message, 'error');
+        console.error('startChat error:', err);
+    }
+}
 
         function viewChatInfo() {
             if (currentChatType === 'group') {
@@ -3359,13 +2788,13 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const userSnap = await rtdb.ref('users/' + currentChatUser).once('value');
-                if (!userSnap.exists()) {
+                const userDoc = await db.collection('users').doc(currentChatUser).get();
+                if (!userDoc.exists) {
                     showLoading(false);
                     return;
                 }
                 
-                const user = userSnap.val();
+                const user = userDoc.data();
                 
                 document.getElementById('viewUserAvatar').innerHTML = user.avatar 
                     ? `<img src="${user.avatar}" alt="">` 
@@ -3382,6 +2811,7 @@ p<!DOCTYPE html>
                 document.getElementById('viewUserModal').classList.add('show');
             } catch (err) {
                 showLoading(false);
+                console.error(err);
             }
         }
 
@@ -3391,6 +2821,7 @@ p<!DOCTYPE html>
 
         function startChatFromView() {
             closeViewUser();
+            // Already in chat
         }
 
         // ==================== GROUPS ====================
@@ -3410,6 +2841,8 @@ p<!DOCTYPE html>
             let username = input.value.trim().toLowerCase();
             
             if (!username) return;
+            
+            // Remove @ if present
             if (username.startsWith('@')) username = username.substring(1);
             
             if (username === currentUser.username) {
@@ -3425,8 +2858,8 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const userSnap = await rtdb.ref('users/' + username).once('value');
-                if (!userSnap.exists()) {
+                const userDoc = await db.collection('users').doc(username).get();
+                if (!userDoc.exists) {
                     showLoading(false);
                     showToast('User tidak ditemukan!', 'error');
                     return;
@@ -3447,7 +2880,7 @@ p<!DOCTYPE html>
             container.innerHTML = '';
             
             groupMembers.forEach((member, index) => {
-                if (member === currentUser.username) return;
+                if (member === currentUser.username) return; // Skip self
                 
                 const tag = document.createElement('div');
                 tag.className = 'member-tag';
@@ -3483,15 +2916,15 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const groupRef = rtdb.ref('chats').push();
+                const groupRef = db.collection('chats').doc();
                 await groupRef.set({
                     type: 'group',
                     name: name,
                     participants: groupMembers,
                     createdBy: currentUser.username,
-                    createdAt: Date.now(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     lastMessage: '',
-                    lastMessageTime: Date.now(),
+                    lastMessageTime: firebase.firestore.FieldValue.serverTimestamp(),
                     unread: {}
                 });
                 
@@ -3502,6 +2935,7 @@ p<!DOCTYPE html>
                 showLoading(false);
                 errorEl.textContent = 'Gagal membuat grup!';
                 errorEl.classList.add('show');
+                console.error(err);
             }
         }
 
@@ -3511,24 +2945,24 @@ p<!DOCTYPE html>
             showLoading(true);
             
             try {
-                const chatSnap = await rtdb.ref('chats/' + currentChatId).once('value');
-                if (!chatSnap.exists()) {
+                const chatDoc = await db.collection('chats').doc(currentChatId).get();
+                if (!chatDoc.exists) {
                     showLoading(false);
                     return;
                 }
                 
-                const chat = chatSnap.val();
+                const chat = chatDoc.data();
                 const body = document.getElementById('groupInfoBody');
                 
                 let membersHtml = '';
-                for (const member of chat.participants || []) {
-                    const userSnap = await rtdb.ref('users/' + member).once('value');
-                    const user = userSnap.val() || {};
+                for (const member of chat.participants) {
+                    const userDoc = await db.collection('users').doc(member).get();
+                    const user = userDoc.exists ? userDoc.data() : {};
                     const isAdmin = member === chat.createdBy;
                     
                     membersHtml += `
                         <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
-                            <div style="width:40px;height:40px;border-radius:50%;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden;">
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--bg-tertiary);display:flex;align-items:center;justify-content:center;font-size:16px;">
                                 ${user.avatar ? `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : '👤'}
                             </div>
                             <div style="flex:1;">
@@ -3548,7 +2982,7 @@ p<!DOCTYPE html>
                             <i class="fas fa-users"></i>
                         </div>
                         <div style="font-size:18px;font-weight:700;">${chat.name}</div>
-                        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">${chat.participants ? chat.participants.length : 0} anggota</div>
+                        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">${chat.participants.length} anggota</div>
                     </div>
                     <div style="font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Anggota Grup</div>
                     ${membersHtml}
@@ -3558,6 +2992,7 @@ p<!DOCTYPE html>
                 document.getElementById('groupInfoModal').classList.add('show');
             } catch (err) {
                 showLoading(false);
+                console.error(err);
             }
         }
 
@@ -3575,6 +3010,7 @@ p<!DOCTYPE html>
             document.getElementById('profileUsernameInput').value = currentUser.username;
             document.getElementById('profileBioInput').value = currentUser.bio || '';
             
+            const avatarEl = document.getElementById('profileAvatar');
             const avatarImg = document.getElementById('profileAvatarImg');
             const avatarText = document.getElementById('profileAvatarText');
             
@@ -3595,43 +3031,45 @@ p<!DOCTYPE html>
         }
 
         async function handleAvatarChange(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const isValid = await validateImageFile(file);
-            if (!isValid) return;
-            
-            showLoading(true);
-            
-            try {
-                const url = await uploadToImgBB(file);
-                
-                currentUser.avatar = url;
-                await rtdb.ref('users/' + currentUser.username + '/avatar').set(url);
-                
-                document.getElementById('profileAvatarImg').src = url;
-                document.getElementById('profileAvatarImg').classList.remove('hidden');
-                document.getElementById('profileAvatarText').classList.add('hidden');
-                
-                showLoading(false);
-                showToast('Foto profil diperbarui!');
-            } catch (err) {
-                showLoading(false);
-                showToast('Gagal mengupload foto', 'error');
-            }
-        }
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const isValid = await validateImageFile(file);
+    if (!isValid) return;
+    
+    showLoading(true);
+    
+    try {
+        const url = await uploadToImgBB(file);
+        
+        currentUser.avatar = url;
+        await db.collection('users').doc(currentUser.username).update({ avatar: url });
+        
+        document.getElementById('profileAvatarImg').src = url;
+        document.getElementById('profileAvatarImg').classList.remove('hidden');
+        document.getElementById('profileAvatarText').classList.add('hidden');
+        
+        showLoading(false);
+        showToast('Foto profil diperbarui!');
+    } catch (err) {
+        showLoading(false);
+        showToast('Gagal mengupload foto', 'error');
+        console.error(err);
+    }
+}
 
         async function saveProfile() {
             const bio = document.getElementById('profileBioInput').value.trim();
             currentUser.bio = bio;
             
             try {
-                await rtdb.ref('users/' + currentUser.username + '/bio').set(bio);
+                await db.collection('users').doc(currentUser.username).update({ bio: bio });
                 localStorage.setItem('mahichat_user', JSON.stringify(currentUser));
                 closeProfile();
                 showToast('Profil berhasil diperbarui!');
             } catch (err) {
                 showToast('Gagal menyimpan profil', 'error');
+                console.error(err);
             }
         }
 
@@ -3639,7 +3077,6 @@ p<!DOCTYPE html>
         function logout() {
             if (!confirm('Yakin mau keluar?')) return;
             
-            cleanupPresence();
             auth.signOut().catch(() => {});
             currentUser = null;
             localStorage.removeItem('mahichat_user');
@@ -3680,10 +3117,6 @@ p<!DOCTYPE html>
             return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
-        function formatDateShort(date) {
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-        }
-
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -3698,29 +3131,38 @@ p<!DOCTYPE html>
             return div.innerHTML;
         }
 
-        const imgbb_api_key = '5f382cb7e28b853ac8c9d3779d605c2b'; 
-        
-        async function uploadToImgBB(file) {
-            const formData = new FormData();
-            formData.append('image', file);
-            
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbb_api_key}`, {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await res.json();
-            if (!data.success) throw new Error(data.error?.message || 'Upload failed');
-            
-            return data.data.url;
-        }
-
-        // Window beforeunload - cleanup
-        window.addEventListener('beforeunload', () => {
-            cleanupPresence();
-            stopTyping();
+        // Close menus when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.attach-btn') && !e.target.closest('.attach-menu')) {
+                document.getElementById('attachMenu').classList.remove('show');
+            }
+            if (!e.target.closest('.attach-option.sticker') && !e.target.closest('.sticker-panel')) {
+                document.getElementById('stickerPanel').classList.remove('show');
+            }
         });
 
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+                const imgbb_api_key = '5f382cb7e28b853ac8c9d3779d605c2b'; 
+        
+        async function uploadToImgBB(file) {
+          const formData = new FormData();
+          formData.append('image', file);
+    
+         const res = await fetch(`https://api.imgbb.com/1/upload?key=${imgbb_api_key}`, {
+        method: 'POST',
+        body: formData
+    });
+    
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error?.message || 'Upload failed');
+    
+    return data.data.url;
+     }    
         init();
     </script>
 </body>
